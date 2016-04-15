@@ -37,19 +37,19 @@ public class TestClient extends JFrame{
    
       //Labels and textfeilds on welcome panel   
       jpStartMain.add(new JLabel("   RIT Username:"));
-      jtfRitName = new JTextField(10);
+      jtfRitName = new JTextField("nel5754",10);
       jpStartMain.add(jtfRitName);
          
       jpStartMain.add(new JLabel("   IP Adress:"));
-      jtfIp = new JTextField(10);
+      jtfIp = new JTextField("localhost",10);
       jpStartMain.add(jtfIp);
    
       jpStartMain.add(new JLabel("   First Name:"));
-      jtfFirstName = new JTextField(10);
+      jtfFirstName = new JTextField("Nathaniel",10);
       jpStartMain.add(jtfFirstName);
    
       jpStartMain.add(new JLabel("   Last Name:"));
-      jtfLastName = new JTextField(10);
+      jtfLastName = new JTextField("Larrimore",10);
       jpStartMain.add(jtfLastName);
    
       JButton jbStart = new JButton("Start Exam");
