@@ -1,149 +1,118 @@
 import java.net.*;
 import java.io.*;
 import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.*;
 
+public class ChatServer{
 
-
-
-public class ChatServer
-{
-   private Vector<ThreadedClient> clients = new Vector<ThreadedClient>();
-   private Vector<String> clientNames = new Vector<String>();
+   public static final int PORT = 16789;
    private ChatServerGUI gui;
-   private HashMap<String,JTextArea> users = new HashMap<String,JTextArea>();
-
-
+   public Vector<ThreadedClient> clients = new Vector<ThreadedClient>();
+   private Hashtable<String,ThreadedClient> clientNames = new Hashtable<String,ThreadedClient>();
    
-   public static void main(String[] args)
-   {
-      
+   
+
+   public static void main(String[] args){
       new ChatServer();
    }
    
-   public ChatServer()
-   {
+   public ChatServer(){
+   
       System.out.println("Starting the server...");
       
+      gui = new ChatServerGUI(this);
+      Thread th = new Thread(gui);
+      th.start();
       
+      try{
       
-      ServerSocket ss = null;
-      Socket s = null;
-      try
-      {   
-         ss = new ServerSocket(16789);
+         ServerSocket ss = new ServerSocket(PORT);
+      
+         Socket s = null;
+      
+         while(true){
+            System.out.println("Waiting for a client...");
+         
+            s = ss.accept();
+            
+            clients.add(new ThreadedClient(s));
+            clients.get(clients.size() - 1).start();
+            
+         }
          
       }
-      catch(IOException ioe)
-      {
+      catch(IOException ioe){
          ioe.printStackTrace();
       }
       
-      gui = new ChatServerGUI(users);
-      if(!clientNames.contains("Server"))
-      {
-         (new StartServerClient()).start();
-      }
-      while(true)
-      {
-         try
-         {
-            s = ss.accept();
-            System.out.println(s);
-         }
-         catch(IOException ioe)
-         {
-            ioe.printStackTrace();
-         }
-         clients.add(new ThreadedClient(s));
-         clients.get(clients.size() - 1).start();
-         
-      }
-   }
-   class StartServerClient extends Thread
-   {
-      public void run()
-      {
-         
-         gui.startClient();
-         
-      }
+      
    }
    
-   class ThreadedClient extends Thread
-   {
+   public ThreadedClient getClientName(String _name){
+      ThreadedClient client = clientNames.get(_name);
+      return client;
+   }
+
+   class ThreadedClient extends Thread{
+      
       private Socket s = null;
       private ObjectInputStream in = null;
       private ObjectOutputStream out = null;
       private String name = null;
-      private int position;
       private JTextArea receiveText;
+   
       
-      public ThreadedClient(Socket _s)
-      {
+      public ThreadedClient(Socket _s){
          s = _s;
+         
          
          receiveText = new JTextArea(10,30);  
          receiveText.setBorder(new EtchedBorder());
          receiveText.setLineWrap(true);
          receiveText.setWrapStyleWord(true);
          receiveText.setEditable(false);
-         gui.scrollReceive.add(receiveText);
          
-         try
-         {
-            out = new ObjectOutputStream(s.getOutputStream());
-            out.flush();
+         
+         try{
             in = new ObjectInputStream(s.getInputStream());
+            out = new ObjectOutputStream(s.getOutputStream());
+            
             
          }
-         catch(IOException ioe)
-         {
-            ioe.printStackTrace();   
+         catch(IOException ioe){
+            ioe.printStackTrace();
          }
-      
-      }
-   
-      public void run()
-      {
-      
-         position = clients.indexOf(this);
          
-         System.out.println("" + position);
+         
+      }
       
-         String msg = null; 
-         try
-         {
+      public void run(){
+         try{
             name = (String)in.readObject();
-            clientNames.add(position,name);
-            users.put(name,receiveText);
-               
-            synchronized(clientNames)
+            
+            System.out.println(name + " has join the chat.");
+            
+            
+            
+            synchronized(gui)
             {
-               gui.addClient(name);
+               gui.addClient(name,receiveText);
+               clientNames.put(name,this);
             }
-            System.out.println(name + " has joind the chat");
-            
             sendOut("");
-            sendOut(name + " has joind the chat");
+            sendOut(name + " has join the chat.");
             
          }
-         catch(IOException ioe)
-         {
-            ioe.printStackTrace();   
+         catch(IOException ioe){
+            ioe.printStackTrace();
          }
-         catch(ClassNotFoundException cnf)
-         {
+         catch(ClassNotFoundException cnf){
             cnf.printStackTrace();
          }
          
          
-         
-         do
-         {
+         while(true){
             Object obj = null;
             try {
                obj = in.readObject();
@@ -163,6 +132,8 @@ public class ChatServer
             } 
             else if (obj instanceof String) {
                
+               String msg = null;
+               
                msg = (String)obj;
                                  
                if(msg.equalsIgnoreCase("quit"))
@@ -170,8 +141,6 @@ public class ChatServer
                      
                   sendOut(name + " has left the chat");
                   sendOut("");
-                     
-                     
                   break;
                }
                
@@ -188,8 +157,9 @@ public class ChatServer
             }
             
          }
-         while(true);
+         
          System.out.println(name + " has disconected");
+         
          try
          {
             in.close();
@@ -201,31 +171,33 @@ public class ChatServer
             return;
          }
          
-         clients.remove(clients.indexOf(this));
-         synchronized(clientNames)
+         synchronized(gui)
          {
-            gui.removeClient(name);
+            gui.removeClient(name,receiveText);
          }
       }
-   
-      public void sendOut(String msg)
-      {
-         try
-         {
+      
+      public void sendOut(String msg){
+         try{
             out.writeObject(msg);
             out.flush();
             receiveText.append(msg + "\n");
-            receiveText.setCaretPosition(receiveText.getDocument().getLength());
-         
             
          }
-         catch(IOException ioe)
-         {
+         catch(IOException ioe){
          
+            ioe.printStackTrace();   
          }
+      
+         
+         if(gui.isUserDisplayed(name)){
+            gui.updateScreen();
+         }
+         
+         
       }
-   
    }
    
+   
+
 }
- 

@@ -48,7 +48,7 @@ public class ChatServer{
       }
    }
    /**
-   *@param String _name which  client you wish to find based on the client
+   *@param  _name which  client you wish to find based on the client
    *@return the client associated with the name parameter
    */
    public ThreadedClient getClientName(String _name){

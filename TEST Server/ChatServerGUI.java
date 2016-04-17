@@ -10,7 +10,7 @@ import java.util.*;
 public class ChatServerGUI extends JFrame implements Runnable{
 
    private JPanel jpMain;
-   private JList<String> users;
+   private JList<String> users,waitingUsers;
    private JButton send;
    private JTextField sendText;
    private JTextArea receiveText;
@@ -39,13 +39,27 @@ public class ChatServerGUI extends JFrame implements Runnable{
       jpMain = new JPanel(new BorderLayout());
       
       users = new JList<String>();
+//       waitingUsers = new JList<String>();
+      
       
       scrollPane = new JScrollPane();
+//      scrollPane.add(waitingUsers);
       scrollPane.getViewport().add(users);
+      
       jpMain.add(scrollPane, BorderLayout.WEST );
          
       users.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
       users.setSize(new Dimension(200,100));
+      
+//       waitingUsers.addListSelectionListener(
+//          new ListSelectionListener(){
+//             public void valueChanged(ListSelectionEvent event){
+//                if(!adding){
+//                   answerClient();
+//                
+//                }
+//             }
+//          });
       
       users.addListSelectionListener(
          new ListSelectionListener(){
@@ -142,6 +156,9 @@ public class ChatServerGUI extends JFrame implements Runnable{
          else{
             
             unAnsweredClients.add(name);
+//             waitingUsers.setListData( unAnsweredClients );
+//             scrollPane.revalidate();
+//             scrollPane.repaint();
             connectedClients.remove(name);
             connectedClients.add(0,name);
             users.setListData( connectedClients );
@@ -154,6 +171,9 @@ public class ChatServerGUI extends JFrame implements Runnable{
       }
       else{
          unAnsweredClients.add(name);
+//          waitingUsers.setListData( unAnsweredClients );
+//          scrollPane.revalidate();
+//          scrollPane.repaint();
          connectedClients.remove(name);
          connectedClients.add(0,name);
          users.setListData( connectedClients );
@@ -173,10 +193,17 @@ public class ChatServerGUI extends JFrame implements Runnable{
       
       jpMain.repaint();
       
-      unAnsweredClients.remove(users.getSelectedValue());
-      
+      //unAnsweredClients.remove(waitingUsers.getSelectedValue());
    }
    
+//    public void answerClient(){
+//          adding = true;
+//          unAnsweredClients.remove(waitingUsers.getSelectedValue());
+//          waitingUsers.setListData( unAnsweredClients );
+//          scrollPane.revalidate();
+//          scrollPane.repaint();
+//          adding = false;
+//    }
    
    public void addClient(String _name,JTextArea userArea){
       adding = true;

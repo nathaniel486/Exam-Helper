@@ -7,19 +7,18 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+public class ChatServerGUI extends JFrame implements Runnable{
 
-public class ChatServerGUI extends JPanel
-{
-   private JFrame mainFrame;
-   private JPanel chat;
+   private JPanel jpMain;
    private JList<String> users;
    private JButton send;
    private JTextField sendText;
-   public JTextArea receiveText;
+   private JTextArea receiveText;
    private JPanel textPanel;
-   private String[] names;
+   private JScrollPane scrollPane,scrollReceive;
    private Vector<String> connectedClients = new Vector<String>();
-   private JScrollPane scrollPane;
+   private Vector<String> unAnsweredClients = new Vector<String>();
+   
    private String name = "Server";
    private String address = "localhost";
    private int port = 16789;
@@ -27,26 +26,23 @@ public class ChatServerGUI extends JPanel
    private ObjectOutputStream  out = null;
    private ObjectInputStream in = null;
    private static final long serialVersionUID = 42L;
-   private HashMap<String,JTextArea> userPanes;
-   private String currentVisible = "Server";
-   public JScrollPane scrollReceive = new JScrollPane(new JTextArea(10,30));
+  
+   private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();
+   private String currentDisplayed = null;
+   private boolean adding = false;
+   private ChatServer test;
 
 
-   public ChatServerGUI(HashMap<String,JTextArea> _userPanes)
-   {
+   public ChatServerGUI(ChatServer _test){
+      test = _test;
    
-      userPanes = _userPanes;
-   
-      mainFrame = new JFrame();
+      jpMain = new JPanel(new BorderLayout());
       
-      setLayout(new BorderLayout());
-   
-   
       users = new JList<String>();
       
       scrollPane = new JScrollPane();
-      scrollPane.getViewport().add( users );
-      add( scrollPane, BorderLayout.WEST );
+      scrollPane.getViewport().add(users);
+      jpMain.add(scrollPane, BorderLayout.WEST );
          
       users.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
       users.setSize(new Dimension(200,100));
@@ -55,66 +51,56 @@ public class ChatServerGUI extends JPanel
          new ListSelectionListener(){
             public void valueChanged(ListSelectionEvent event)
             {
-            
-               userPanes.get(currentVisible).setVisible(false);
-               userPanes.get(connectedClients.get(users.getSelectedIndex())).setVisible(true);
-               currentVisible = connectedClients.get(users.getSelectedIndex());              
-               mainFrame.pack();
-               mainFrame.repaint();
+               if(!adding){
+                  updateScreen();
                
+               }
             }
          });
-   
-      
    
       send = new JButton("Send");
       
       
       //send messages
-      sendText = new JTextField(50);
+      sendText = new JTextField(40);
       sendText.setBorder(new EtchedBorder());
       
-      
       //receive messages    
+      receiveText = new JTextArea(10,30);  
+      receiveText.setBorder(new EtchedBorder());
+      receiveText.setLineWrap(true);
+      receiveText.setWrapStyleWord(true);
+      receiveText.setEditable(false);
       
+      scrollReceive = new JScrollPane(receiveText);
       
       JPanel sendPanel = new JPanel(new BorderLayout());
       sendPanel.add(sendText,BorderLayout.WEST);
       sendPanel.add(send,BorderLayout.EAST);
       
-      textPanel = new JPanel();
-      textPanel.setLayout(new BorderLayout());
+      textPanel = new JPanel(new BorderLayout());
       
-            
       textPanel.add(scrollReceive,BorderLayout.CENTER);
       textPanel.add(sendPanel,BorderLayout.SOUTH);
    
-      add(textPanel,BorderLayout.CENTER);
+      jpMain.add(textPanel,BorderLayout.CENTER);
       
-      mainFrame.add(this);
-      mainFrame.pack();
-      mainFrame.setLocationRelativeTo(null);
-      mainFrame.setVisible(true); 
-      
-      
+      add(jpMain);
+      pack();
+      setLocationRelativeTo(null);
+      setVisible(true); 
       
       send.addActionListener(
          new ActionListener(){
             public void actionPerformed(ActionEvent ae)
             {
-               try
-               {
-                  String msg = sendText.getText();
-                  out.writeObject(msg);
-                  out.flush();
-                  sendText.setText(null);
-               }
-               catch(IOException ioe)
-               {
-                           
-               }
+               String msg = sendText.getText();
+               sendOut(msg);
+               sendText.setText(null);
+            
             }
          });
+         
       sendText.addKeyListener(
          new KeyAdapter(){
             public void keyPressed(KeyEvent ke)
@@ -126,7 +112,7 @@ public class ChatServerGUI extends JPanel
             }
          });
          
-      mainFrame.addWindowListener(
+      addWindowListener(
          new WindowAdapter(){
             public void windowClosing(WindowEvent we){
                System.out.println("Closing the Client...");
@@ -146,9 +132,97 @@ public class ChatServerGUI extends JPanel
          });    
    }
    
+   public boolean isUserDisplayed(String name){
+      adding = true;
+      if(!users.isSelectionEmpty()){
+         if(users.getSelectedValue().equals(name)){
+            adding = false;
+            return true;
+         }
+         else{
+            
+            unAnsweredClients.add(name);
+            connectedClients.remove(name);
+            connectedClients.add(0,name);
+            users.setListData( connectedClients );
+            scrollPane.revalidate();
+            scrollPane.repaint();
+                           
+            adding = false;
+            return false;      
+         }
+      }
+      else{
+         unAnsweredClients.add(name);
+         connectedClients.remove(name);
+         connectedClients.add(0,name);
+         users.setListData( connectedClients );
+         scrollPane.revalidate();
+         scrollPane.repaint();
+         adding = false;
+         return false;
+      }
+      
+   }
    
-   public void startClient()
-   {
+   public void updateScreen(){
+      JTextArea work = userPanes.get(users.getSelectedValue());
+      receiveText.setText(work.getText());
+      userPanes.put(users.getSelectedValue(),work);
+      receiveText.setCaretPosition(receiveText.getDocument().getLength());
+      
+      jpMain.repaint();
+      
+      unAnsweredClients.remove(users.getSelectedValue());
+      
+   }
+   
+   
+   public void addClient(String _name,JTextArea userArea){
+      adding = true;
+      users.clearSelection();
+      connectedClients.add(_name);
+      userPanes.put(_name,userArea);
+      scrollReceive.add(userArea);
+   	
+      
+      users.setListData( connectedClients );
+      scrollPane.revalidate();
+      scrollPane.repaint();
+      adding = false;
+   }
+   
+   public void removeClient(String _name,JTextArea userArea){
+      adding = true;
+      users.clearSelection();
+      connectedClients.remove(_name);
+      userPanes.remove(_name,userArea);
+      scrollReceive.remove(userArea);
+      
+      
+      users.setListData( connectedClients );
+      scrollPane.revalidate();
+      scrollPane.repaint();
+      adding = false;
+   }
+   
+   public void sendOut(String msg){
+      
+      if(!users.isSelectionEmpty()){   
+         if(users.getSelectedValue().equals(name)){
+            for(int i = 0;i < test.clients.size();i++){
+               test.clients.get(i).sendOut(name + ":");
+               test.clients.get(i).sendOut(msg);
+            }
+         }
+         else{
+            test.getClientName(users.getSelectedValue()).sendOut(name + ":");
+            test.getClientName(users.getSelectedValue()).sendOut(msg);
+         }
+      }
+   }
+   
+   public void run(){
       try
       {
       
@@ -156,7 +230,6 @@ public class ChatServerGUI extends JPanel
          out = new ObjectOutputStream(s.getOutputStream());
          out.flush();
          in = new ObjectInputStream(s.getInputStream());
-         //(new Reading()).start();
       
          
       }
@@ -181,62 +254,5 @@ public class ChatServerGUI extends JPanel
          ioe.printStackTrace();
       }
    }
-   
-   public void addClient(String _name)
-   {
-      
-      connectedClients.add(_name);
-   	
-      users.setListData( connectedClients );
-      scrollPane.revalidate();
-      scrollPane.repaint();
-   
-   }
-   
-   public void removeClient(String _name)
-   {
-      
-      connectedClients.remove(_name);
-   	
-      users.setListData( connectedClients );
-      scrollPane.revalidate();
-      scrollPane.repaint();
-   
-   }
-   
-   
-   
-//    class Reading extends Thread
-//    {
-//       public void run()
-//       {
-//          Object ob = null;
-//          while(true)
-//          {
-//             try
-//             {
-//                ob = in.readObject();
-//             
-//             
-//                if(ob instanceof String)
-//                {
-//                   String msg = (String)in.readObject();
-//                   String inName = (String)ob;
-//                   receiveText.append(inName + "\n");
-//                   receiveText.append(msg + "\n");
-//                   receiveText.setCaretPosition(receiveText.getDocument().getLength());
-//                
-//                }
-//             }
-//             catch(IOException ioe)
-//             {
-//             
-//             }
-//             catch(ClassNotFoundException cnf)
-//             {
-//                break;
-//             }
-//          }
-//       }
-//    }
+
 }
