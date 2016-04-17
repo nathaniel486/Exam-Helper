@@ -8,17 +8,17 @@ import java.net.*;
 public class TestClient extends JFrame{
   //Global Attributes
    //GUI Attributes
-   private JTextField jtfRitName;   //RIT Username of Client
-   private JTextField jtfIp;        //IP Address of Client
-   private JTextField jtfFirstName; //First name of Client
-   private JTextField jtfLastName;  //Last name of Client 
+   private JTextField jtfRitName;
+   private JTextField jtfIp;
+   private JTextField jtfFirstName;
+   private JTextField jtfLastName;
    
    //Field Attributes
-   private String ritName;
-   private String ip;
-   private String firstName;
-   private String lastName;
-   private String fullName;
+   private String ritName;   //RIT Username of Client
+   private String ip;        //IP Address of Client
+   private String firstName; //First name of Client
+   private String lastName;  //Last name of Client 
+   private String fullName;  //Full name of Client
    
    //Network Attributes
    private final int PORT_NUMBER = 16789;
@@ -65,44 +65,48 @@ public class TestClient extends JFrame{
       setVisible(true);
       
       //Anonymous inner class for the start button to start the SubmissionGUI
-      jbStart.addActionListener(
-         new ActionListener(){
-            public void actionPerformed(ActionEvent ae) {
-               //Read in values from GUI
-               ritName = jtfRitName.getText();
-               ip = jtfIp.getText();
-               firstName = jtfFirstName.getText();
-               lastName = jtfLastName.getText();
-               fullName = firstName + " " + lastName;
+      jbStart.addActionListener( new ActionListener(){
+         public void actionPerformed(ActionEvent ae) {
+            //Read in values from GUI
+            ritName = jtfRitName.getText();
+            ip = jtfIp.getText();
+            firstName = jtfFirstName.getText();
+            lastName = jtfLastName.getText();
+            fullName = firstName + " " + lastName;
                
-               new SubmissionGUI();
-               setVisible(false);              
-            }
-         });
+            new SubmissionGUI();
+            setVisible(false);              
+         }
+      });
    }
    
   /**
    * Submission GUI will be the main GUI where we have the file transfer
    */ 
-class SubmissionGUI extends JFrame{      
+   class SubmissionGUI extends JFrame{      
       private Socket s = null;
       private ObjectOutputStream  out = null;
       private ObjectInputStream in = null;
-      private JTextArea receiveText;
+      
       private ChatClient chatPanel;
+      private JTextArea receiveText;
+      
       private FileSubmitter fileSubmitPanel;
+      
       private static final long serialVersionUID = 42L;
       
       public SubmissionGUI() {
         //Networking setup
-         //Create socket
+         //Create socket and input/output streams
          try {
             s = new Socket(ip, PORT_NUMBER);
             out = new ObjectOutputStream(s.getOutputStream());
             out.flush();
             in = new ObjectInputStream(s.getInputStream());
+            
             receiveText = new JTextArea(10,30);
             chatPanel = new ChatClient(out,fullName,receiveText);
+            
             fileSubmitPanel = new FileSubmitter(out);
             
             (new Reading()).start();
@@ -114,26 +118,24 @@ class SubmissionGUI extends JFrame{
             System.out.println("IO Exception! " + e.getMessage());
          }
          
-         
-      
-      
+        
         //Create main GUI
          //Creation of top menu bar
          JPanel jpMain = new JPanel(new BorderLayout());
          add(jpMain);
          
          JMenuBar jmbar = new JMenuBar();
-         JMenu jmFile = new JMenu("File");
-         JMenuItem jmiFileQuit = new JMenuItem("Quit");
-         JMenuItem jmiFileLogout = new JMenuItem("Logout");
-         jmFile.add(jmiFileQuit);
-         jmFile.add(jmiFileLogout); 
-         jmbar.add(jmFile);
+            JMenu jmFile = new JMenu("File");
+               JMenuItem jmiFileQuit = new JMenuItem("Quit");
+               JMenuItem jmiFileLogout = new JMenuItem("Logout");
+               jmFile.add(jmiFileQuit);
+               jmFile.add(jmiFileLogout); 
+            jmbar.add(jmFile);
             
-         JMenu jmEdit = new JMenu("Edit");
-         JMenuItem jmiEditPort = new JMenuItem("Change Port");
-         jmEdit.add(jmiEditPort);
-         jmbar.add(jmEdit);
+            JMenu jmEdit = new JMenu("Edit");
+               JMenuItem jmiEditPort = new JMenuItem("Change Port");
+               jmEdit.add(jmiEditPort);
+            jmbar.add(jmEdit);
          setJMenuBar(jmbar);
          
          //Panel for nathaniel/chat   
@@ -147,66 +149,63 @@ class SubmissionGUI extends JFrame{
          setLocationRelativeTo(null);
          pack();
          
-         addWindowListener(
-         new WindowAdapter(){
+         addWindowListener( new WindowAdapter() {
             public void windowClosing(WindowEvent we){
                System.out.println("Closing the Client...");
-               try
-               {
+               try {
                   out.writeObject("quit");
                   out.flush();
                   System.exit(0);
-               }
-               catch(IOException ioe)
-               {
-               
-               }
-               	
+               } catch(IOException e)  {
+                  System.out.println("Error closing the client. IO Exception " + e.getMessage());
+               }	
             }	
          });
-         
-         
       }
       
-      class Reading extends Thread
-      {
-         public void run()
-         {
-            Object ob = null;
-            while(true)
-            {
-               try
-               {
-                  ob = in.readObject();
+     /**
+      * class which handles the reading in of objects from the server. Depending on what type of object
+      * is read in from the server, different things happen.
+      */
+      class Reading extends Thread {
+         
+         public void run() {
+            Object obj = null;
+            
+            //Always ready to read in from server
+            while(true) {
+               try {
+                  obj = in.readObject();   //Generic object to start with for reading in
                
-               
-                  if(ob instanceof String)
-                  {
+                  if(obj instanceof String) {
+                   //If object is of type String, it is a chat message and should handled by the ChatClient
                      String msg = (String)in.readObject();
-                     String inName = (String)ob;
+                     String inName = (String)obj;
                      receiveText.append(inName + "\n");
                      receiveText.append(msg + "\n");
                      receiveText.setCaretPosition(receiveText.getDocument().getLength());
                   
-                  } else if (ob instanceof File) {
-                     //Read in error responses OKs from server (stored in a txt file)
-                     //Append them into text area in the FileSumbitter JPanel
+                  } else if (obj instanceof File) {
+                     File logText = (File)obj;
+                     
+                     fileSubmitPanel.readLog(logText);
                   } else {
                      System.out.println("How did we get here?");
                   }
-               }
-               catch(IOException ioe)
-               {
-               
-               }
-               catch(ClassNotFoundException cnf)
-               {
-                  break;
+               } catch(IOException e) {
+                  System.out.println("Could not read in from server. IO Exception " + e.getMessage());
+               } catch(ClassNotFoundException e) {
+                  System.out.println("Could not understand the type of Object read in from server. Class Not Found Exception " + e.getMessage());
+                  //break;
                }
             }
          }
       }
    }
+   
+  /**
+   * Main method of client program. Starts client GUI
+   */
    public static void main(String[]args){
       new TestClient();
    }

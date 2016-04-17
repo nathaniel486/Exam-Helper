@@ -6,15 +6,25 @@ import java.io.*;
 
 public class FileSubmitter extends JPanel {
    
+   private static final long serialVersionUID = 6156864232085906921L;
+   
    private ObjectOutputStream oos;
+   private JTextArea jtaDisplay;
    
    public FileSubmitter(ObjectOutputStream _oos) {
       oos = _oos;
       
       //Create GUI
-      JButton jbOpenFiles = new JButton("Open Files");
-      add(jbOpenFiles);
+      setLayout(new BorderLayout());
       
+      JButton jbOpenFiles = new JButton("Open Files");
+      add(jbOpenFiles, BorderLayout.NORTH);
+      
+      jtaDisplay = new JTextArea(5,0);
+      jtaDisplay.setEditable(false);
+      JScrollPane jscroller = new JScrollPane(jtaDisplay);
+      add(jscroller, BorderLayout.SOUTH);
+            
       //Create Listener object
       FileTransferListener ftl = new FileTransferListener();
       
@@ -41,26 +51,7 @@ public class FileSubmitter extends JPanel {
                //Send file to server
                oos.writeObject(file);
                oos.flush();
-            }
-               
-            // //Read in response from server
-//             //Server will send back the file if it is named incorrectly
-//             //Server will send a String message of Success if the file is named correctly
-//             try {
-//                Object obj = ois.readObject();
-//                if (obj instanceof File) {
-//                   file = (File)obj;
-//                   System.out.println("Incorrect file name! File named " + file.getName());
-//                } 
-//                else if (obj instanceof String){
-//                   String msg = (String)obj;
-//                   System.out.println(msg);
-//                }
-//             } 
-//             catch (ClassNotFoundException e) {
-//                System.out.println("Failed to read from server. ClassNotFoundException " + e.getMessage());
-//             }
-                              
+            }                              
          } 
          catch (IOException e) {
             System.out.println("IO Exception! " + e.getMessage());
@@ -68,5 +59,20 @@ public class FileSubmitter extends JPanel {
       }
    }
    
+   public void readLog(File logTextFile) {
+      try {
+		   BufferedReader br = new BufferedReader(new FileReader(logTextFile));
+					
+			// read all data from file and add it to the textArea display
+			String line = null;
+			while( (line = br.readLine()) != null) {
+            jtaDisplay.append(line + "\n");
+			}
+         jtaDisplay.append("\n");
+         br.close();
+      } catch (IOException e) {
+         System.out.println("Could not read in file from server. IO Exception " + e.getMessage());
+      }
+   }
    
 } //end class FileSubmitter

@@ -7,7 +7,7 @@ import java.net.*;
 
 public class ChatClient extends JPanel
 {
-   private ObjectOutputStream  out = null;
+   private ObjectOutputStream out = null;
    private JTextField sendText;
    private JTextArea receiveText;
    private JPanel 	textPanel;
