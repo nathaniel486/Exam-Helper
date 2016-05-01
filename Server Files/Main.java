@@ -245,31 +245,29 @@ public class Main extends JFrame {
                   //Make a directory for the submitting client
                   File studentDir = new File(saveDir, name);
                   studentDir.mkdirs();
-                  System.out.println(studentDir.getAbsolutePath());
-                  //Save the submitted file to the created directory
+                  
+                  System.out.println(studentDir.getPath());
                   File logText = new File(studentDir, "logFile.txt");
-                  System.out.println(logText.getAbsolutePath());
+                  
+                  //Save the submitted file to the created directory
                   try {
-                     
-                     BufferedWriter bw = new BufferedWriter(new FileWriter(logText));
-                     PrintWriter pw = new PrintWriter(bw);
-                     
-                     System.out.println("Created writers");
-                     
-                     FileOutputStream fout = new FileOutputStream(new File(studentDir, submittedFile.getName()));
-               		ObjectOutputStream oos = new ObjectOutputStream(fout);   
-               		oos.writeObject(submittedFile);
-               		oos.close();
-                     
-                     //ObjectOutputStream saveFileOutputStream = new ObjectOutputStream(new FileOutputStream(studentDir));   
-               		//saveFileOutputStream.writeObject(submittedFile);
-               		//saveFileOutputStream.close();
-                     
+                     // read all data from the submitted file and save it to the studentDir
+                     FileInputStream submittedFileIn = new FileInputStream(submittedFile);
+					      FileOutputStream submittedFileOut = new FileOutputStream(new File(studentDir, submittedFile.getName()));
+            			while( submittedFileIn.available() > 0 ) {
+                        submittedFileOut.write(submittedFileIn.read());
+            			}
+                     submittedFileOut.flush();
+                     submittedFileOut.close();
+                     submittedFileIn.close();
+                                          
                      System.out.println("Saved out file");
                      
                      //Write to log file message of successful file submission
+                     BufferedWriter bw = new BufferedWriter(new FileWriter(logText));
+                     PrintWriter pw = new PrintWriter(bw);
+                     
                      pw.println("Your code has been successfully submitted!");
-                     pw.println();
                      bw.flush();
                      bw.close();
                      
@@ -278,8 +276,6 @@ public class Main extends JFrame {
                   } catch (IOException e) {
                      System.out.println("Error writing log file. IO Exception " + e.getMessage() );
                   }
-                  
-               
                }
                 //If Object read into server is a String, it is a Chat message
                  else if (obj instanceof String) {
