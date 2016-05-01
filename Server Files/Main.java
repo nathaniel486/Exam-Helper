@@ -14,13 +14,15 @@ public class Main extends JFrame {
    private JTextField jtfendTime;
    private JTextField jtfprofName;
    private JTextField jtfnameOfFile;
+   private JTextField jtfsaveDir;
    
    //Field Attributes
-   private String password;  //Password Setter
+   private String password;   //Password Setter
    private String profName;   //Prof name
-   private String nameOfFile;   //Name of file to be submitted
-   private long startTime;   //Set timer on Server side
-   private long endTime;
+   private String nameOfFile; //Name of file to be submitted
+   private long startTime;    //Set start time on Server side
+   private long endTime;      //Set end time on Server side
+   private File saveDir;      //Directory where all of the student submissions will be saved
    
    //Network Attributes
    private final int PORT_NUMBER = 16789;
@@ -32,7 +34,7 @@ public class Main extends JFrame {
       //Main JPanel
       JPanel jpMain = new JPanel(new BorderLayout());
       
-      JPanel jpStartMain = new JPanel(new GridLayout(5,2));
+      JPanel jpStartMain = new JPanel(new GridLayout(6,2));
       
       JPanel jpStartButton = new JPanel(new FlowLayout());
       
@@ -44,6 +46,12 @@ public class Main extends JFrame {
       jpStartMain.add(new JLabel("     Name Of Files:"));
       jtfnameOfFile = new JTextField("",10);
       jpStartMain.add(jtfnameOfFile);
+      
+      JButton jbChooseSaveDir = new JButton("Choose Save Location");
+      jpStartMain.add(jbChooseSaveDir);
+      jtfsaveDir = new JTextField("",10);
+      jpStartMain.add(jtfsaveDir);
+      jtfsaveDir.setEnabled(false);
       
       jpStartMain.add(new JLabel("     Start Time:"));
       jtfstartTime = new JTextField("",10);
@@ -66,6 +74,22 @@ public class Main extends JFrame {
       setLocationRelativeTo(null);
       pack();
       setVisible(true);
+      
+      //Anonymous inner class for save directory button
+      jbChooseSaveDir.addActionListener( new ActionListener(){
+         public void actionPerformed(ActionEvent ae){
+            //Prompt user for a locaiton to save submitted files
+            JFileChooser chooser = new JFileChooser(new File("~/").getAbsolutePath()); //Open FileChooser in current directory
+            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);   //Set the Chooser to only allow the user to select directories
+            chooser.setAcceptAllFileFilterUsed(false);
+            int returnVal = chooser.showDialog(null, "Save Submitted Files Here");   //Returns the CONSTANT value for whether the choice was Approve, Cancel, or an error
+            saveDir = chooser.getSelectedFile();
+            //If a file is successfully opened
+            if (saveDir != null && returnVal == JFileChooser.APPROVE_OPTION) {
+         	   jtfsaveDir.setText(saveDir.getName());
+            }
+         }
+      });
       
       //Anonymous inner class for start button
       jbStart.addActionListener( 
@@ -114,17 +138,16 @@ public class Main extends JFrame {
          });
    }
    
+  /*
+   * Running server code for the ImDone server
+   */
    class Server extends Thread{
    
       public static final int PORT = 16789;
       public Vector<ThreadedClient> clients = new Vector<ThreadedClient>();
       private Hashtable<String,ThreadedClient> clientNames = new Hashtable<String,ThreadedClient>();
-   
-      public Server(){
       
-      }
-      
-      public ThreadedClient getClientName(String _name){
+      public ThreadedClient getClientName(String _name) {
          ThreadedClient client = clientNames.get(_name);
          return client;
       }
@@ -168,7 +191,7 @@ public class Main extends JFrame {
          
             receiveText = new JTextArea(10,30);  
             
-            try{
+            try {
                in = new ObjectInputStream(s.getInputStream());
                out = new ObjectOutputStream(s.getOutputStream());
             }
@@ -199,35 +222,71 @@ public class Main extends JFrame {
                cnf.printStackTrace();
             }
          
-            while(true){
+            //Reading in to server
+            while(true) {
+               
                Object obj = null;
+               
                try {
                   obj = in.readObject();
-               } 
-               catch (IOException e) {
-                  System.out.println("IO Exception encountered! " + e.getMessage());
+               } catch (IOException e) {
+                  System.out.println("Error reading in object to server. IO Exception! " + e.getMessage());
                   break;
-               } 
-               catch (ClassNotFoundException e) {
-                  System.out.println("Class Not Found Exception encountered! " + e.getMessage());
+               } catch (ClassNotFoundException e) {
+                  System.out.println("Object read into server not recognized. Class Not Found Exception! " + e.getMessage());
                   break;
                }
-            
+               
+               //If Object read into server is a File
                if (obj instanceof File) {
-               //Create File object and then read in File object from client
-                  File file = null;
-                  file = (File)obj;
-               
-               } 
-               else if (obj instanceof String) {
-               
-                  String msg = null;
-               
-                  msg = (String)obj;
-                                 
-                  if(msg.equalsIgnoreCase("quit"))
-                  {
+               //Read in File object from client
+                  File submittedFile = (File)obj;
+                  
+                  //Make a directory for the submitting client
+                  File studentDir = new File(saveDir, name);
+                  studentDir.mkdirs();
+                  System.out.println(studentDir.getAbsolutePath());
+                  //Save the submitted file to the created directory
+                  File logText = new File(studentDir, "logFile.txt");
+                  System.out.println(logText.getAbsolutePath());
+                  try {
                      
+                     BufferedWriter bw = new BufferedWriter(new FileWriter(logText));
+                     PrintWriter pw = new PrintWriter(bw);
+                     
+                     System.out.println("Created writers");
+                     
+                     FileOutputStream fout = new FileOutputStream(new File(studentDir, submittedFile.getName()));
+               		ObjectOutputStream oos = new ObjectOutputStream(fout);   
+               		oos.writeObject(submittedFile);
+               		oos.close();
+                     
+                     //ObjectOutputStream saveFileOutputStream = new ObjectOutputStream(new FileOutputStream(studentDir));   
+               		//saveFileOutputStream.writeObject(submittedFile);
+               		//saveFileOutputStream.close();
+                     
+                     System.out.println("Saved out file");
+                     
+                     //Write to log file message of successful file submission
+                     pw.println("Your code has been successfully submitted!");
+                     pw.println();
+                     bw.flush();
+                     bw.close();
+                     
+                     out.writeObject(logText);
+                     
+                  } catch (IOException e) {
+                     System.out.println("Error writing log file. IO Exception " + e.getMessage() );
+                  }
+                  
+               
+               }
+                //If Object read into server is a String, it is a Chat message
+                 else if (obj instanceof String) {
+               
+                  String msg = (String)obj;
+                                 
+                  if(msg.equalsIgnoreCase("quit")) {
                      sendOut(name + " has left the chat");
                      sendOut("");
                      break;
@@ -237,9 +296,9 @@ public class Main extends JFrame {
                   sendOut(msg);
                   
                   System.out.println(name + ": " + msg);
-                              
-               } 
-               else {
+                 
+               //If Object read into server is not a String or a File, welp, now isn't that strange...             
+               } else {
                   System.out.println("How did we get here?");
                }
             
@@ -247,21 +306,17 @@ public class Main extends JFrame {
          
             System.out.println(name + " has disconected");
          
-            try
-            {
+            try {
                in.close();
                out.close();
                s.close();
-            }
-            catch(IOException ioe)
-            {
+            } catch(IOException ioe) {
+               System.out.println("Error closing input, output, and socket connections. IO Exception! " + ioe.getMessage());
                return;
-            }
-            finally{
-            synchronized(clients)
-            {
-               gui.removeClient(name,receiveText);
-            }
+            } finally{
+               synchronized(clients) {
+                  gui.removeClient(name,receiveText);
+               }
             }
          }
       
@@ -270,9 +325,8 @@ public class Main extends JFrame {
                out.writeObject(msg);
                out.flush();
                receiveText.append(msg + "\n");
-            }
-            catch(IOException ioe){
-            
+            } catch(IOException ioe){
+               System.out.println("Error sending message. IO Exception! " + ioe.getMessage());
                ioe.printStackTrace();   
                return;
             }
