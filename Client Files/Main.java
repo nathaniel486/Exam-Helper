@@ -37,7 +37,7 @@ public class Main extends JFrame{
    
       //Labels and textfeilds on welcome panel   
       jpStartMain.add(new JLabel("   RIT Username:"));
-      jtfRitName = new JTextField("nel5754",10);
+      jtfRitName = new JTextField("stu1234",10);
       jpStartMain.add(jtfRitName);
          
       jpStartMain.add(new JLabel("   IP Adress:"));
@@ -45,11 +45,11 @@ public class Main extends JFrame{
       jpStartMain.add(jtfIp);
    
       jpStartMain.add(new JLabel("   First Name:"));
-      jtfFirstName = new JTextField("Nathaniel",10);
+      jtfFirstName = new JTextField("Ritchie",10);
       jpStartMain.add(jtfFirstName);
    
       jpStartMain.add(new JLabel("   Last Name:"));
-      jtfLastName = new JTextField("Larrimore",10);
+      jtfLastName = new JTextField("Tiger",10);
       jpStartMain.add(jtfLastName);
    
       JButton jbStart = new JButton("Start Exam");
@@ -150,8 +150,8 @@ public class Main extends JFrame{
                   
          setVisible(true);
          setDefaultCloseOperation( EXIT_ON_CLOSE );
-         setLocationRelativeTo(null);
          pack();
+         setLocationRelativeTo(null);
          
          addWindowListener( new WindowAdapter() {
             public void windowClosing(WindowEvent we){
