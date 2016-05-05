@@ -1,0 +1,11 @@
+Source directory: Practical
+Termination exit status = 2
+StdIn (0) = 
+
+StdErr (132)= 
+javac: invalid flag: /Users/Brendon/Documents/School
+Usage: javac <options> <source files>
+use -help for a list of possible options
+
+
+
