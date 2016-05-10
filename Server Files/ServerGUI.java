@@ -22,9 +22,9 @@ public class ServerGUI extends JFrame implements Runnable{
    private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();
    private String currentDisplayed = null;
    private boolean adding = false;
-   private Main.Server comm;
+   private MainServer.Server comm;
  
-   private String name = "Server";
+   private String name;
    private String address = "localhost";
    private int port = 16789;
    private Socket s = null;
@@ -32,7 +32,8 @@ public class ServerGUI extends JFrame implements Runnable{
    private ObjectInputStream in = null;
    private static final long serialVersionUID = 42L;
   
-  public ServerGUI(Main.Server _comm){
+  public ServerGUI(MainServer.Server _comm,String _name){
+      name = _name;
       comm = _comm;
       
       jpMain = new JPanel();
@@ -219,16 +220,19 @@ public class ServerGUI extends JFrame implements Runnable{
    public void sendOut(String msg){
       if(!users.isSelectionEmpty()){   
          if(users.getSelectedValue().equals(name)){
-            for(int i = 0;i < comm.clients.size();i++){
-               comm.clients.get(i).sendOut(name + ":");
-               comm.clients.get(i).sendOut(msg);
-            }
+            sendAll(msg);
          }
          else{
             comm.getClientName(users.getSelectedValue()).sendOut(name + ":");
             comm.getClientName(users.getSelectedValue()).sendOut(msg);
          }
       }
+   }
+   public void sendAll(String msg){
+      for(int i = 0;i < comm.clients.size();i++){
+               comm.clients.get(i).sendOut(name + ":");
+               comm.clients.get(i).sendOut(msg);
+            }
    }
    
    public void disconnect(){
@@ -269,7 +273,7 @@ public class ServerGUI extends JFrame implements Runnable{
          
       try
       {
-         out.writeObject("Server");
+         out.writeObject(name);
          out.flush();
       }
       catch(IOException ioe)
