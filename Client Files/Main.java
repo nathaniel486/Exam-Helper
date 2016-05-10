@@ -26,10 +26,14 @@ public class Main extends JFrame{
    private final int PORT_NUMBER = 16789;
    private static final long serialVersionUID = 42L;
    
+   private Main main;
+   
   /**
    * Creating and building GUI
    */
    public Main() {
+   
+      main = this;
    
       JPanel jpMain = new JPanel(new BorderLayout()); //Main JPanel for the Beginning GUI where client inputs credentials
       
@@ -39,19 +43,19 @@ public class Main extends JFrame{
    
       //Labels and textfeilds on welcome panel   
       jpStartMain.add(new JLabel("   RIT Username:"));
-      jtfRitName = new JTextField("stu1234",10);
+      jtfRitName = new JTextField(10);
       jpStartMain.add(jtfRitName);
          
       jpStartMain.add(new JLabel("   IP Adress:"));
-      jtfIp = new JTextField("localhost",10);
+      jtfIp = new JTextField(10);
       jpStartMain.add(jtfIp);
    
       jpStartMain.add(new JLabel("   First Name:"));
-      jtfFirstName = new JTextField("Ritchie",10);
+      jtfFirstName = new JTextField(10);
       jpStartMain.add(jtfFirstName);
    
       jpStartMain.add(new JLabel("   Last Name:"));
-      jtfLastName = new JTextField("Tiger",10);
+      jtfLastName = new JTextField(10);
       jpStartMain.add(jtfLastName);
       
       //Password must match!
@@ -67,23 +71,42 @@ public class Main extends JFrame{
       jpMain.add(jbStart, BorderLayout.SOUTH);
           
       add(jpMain);
+      setDefaultCloseOperation(EXIT_ON_CLOSE);
       setLocationRelativeTo(null);
       pack();
       setVisible(true);
+      setResizable(false);
       
       //Anonymous inner class for the start button to start the SubmissionGUI
       jbStart.addActionListener( new ActionListener(){
          public void actionPerformed(ActionEvent ae) {
             //Read in values from GUI
+            
             ritName = jtfRitName.getText();
             ip = jtfIp.getText();
             firstName = jtfFirstName.getText();
             lastName = jtfLastName.getText();
             fullName = firstName + " " + lastName;
             password = jtfPassword.getText();
+            
+            if(ritName.equals("")){
+               JOptionPane.showMessageDialog(null,"Please enter your RIT userName.");
+               return;
+            }
+            else if(ip.equals("")){
+               JOptionPane.showMessageDialog(null,"Please enter the IP address of the server you wish to connect to.");
+            }
+            else if(firstName.equals("")){
+               JOptionPane.showMessageDialog(null,"Please enter your first name.");
+            }  
+            else if(lastName.equals("")){
+               JOptionPane.showMessageDialog(null,"Please enter your last name.");
+            }
+            else{
+               new SubmissionGUI();
+            }
+            
                
-            new SubmissionGUI();
-            setVisible(false);              
          }
       });
    }
@@ -117,14 +140,18 @@ public class Main extends JFrame{
             
             fileSubmitPanel = new FileSubmitter(out);
             
+            main.setVisible(false);
+            
             (new Reading()).start();
          } 
          catch (UnknownHostException e) {
             System.out.println("Unknown Host Exception! " + e.getMessage());
+            JOptionPane.showMessageDialog(null,"Cannot connect to server at specified address.  Please try again later.");
             return;
          } 
          catch (IOException e) {
             System.out.println("IO Exception! " + e.getMessage());
+            JOptionPane.showMessageDialog(null,"Cannot connect to server at specified address.  Please try again later.");
             return;
          }
          
@@ -157,6 +184,7 @@ public class Main extends JFrame{
          setVisible(true);
          setDefaultCloseOperation( EXIT_ON_CLOSE );
          pack();
+         setResizable(false);
          setLocationRelativeTo(null);
          
          addWindowListener( new WindowAdapter() {
@@ -219,10 +247,11 @@ public class Main extends JFrame{
       }
    }//End Submission
    
+   
   /**
    * Main method of client program. Starts client GUI
    */
    public static void main(String[]args){
-      new Main();
+     new Main();
    }
 }
