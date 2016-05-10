@@ -20,7 +20,6 @@ public class Main extends JFrame {
    private String password;   //Password Setter
    private String profName;   //Prof name
    private String nameOfFile; //Name of file to be submitted
-   private long startTime;    //Set start time on Server side
    private long endTime;      //Set end time on Server side
    private File saveDir;      //Directory where all of the student submissions will be saved
    
@@ -52,10 +51,6 @@ public class Main extends JFrame {
       jtfsaveDir = new JTextField("",10);
       jpStartMain.add(jtfsaveDir);
       jtfsaveDir.setEnabled(false);
-      
-      jpStartMain.add(new JLabel("     Start Time:"));
-      jtfstartTime = new JTextField("",10);
-      jpStartMain.add(jtfstartTime);
       
       jpStartMain.add(new JLabel("     End Time:"));
       jtfendTime = new JTextField("",10);
@@ -99,12 +94,10 @@ public class Main extends JFrame {
                
                profName = jtfprofName.getText();
                nameOfFile = jtfnameOfFile.getText();
-               startTime = Long.parseLong(jtfstartTime.getText());
                endTime = Long.parseLong(jtfendTime.getText());
                password = jtfpassword.getText();
                setVisible(false);
 
-               System.out.println("" + startTime);
                System.out.println("" + endTime);
                                              
                //start server communication
@@ -174,8 +167,6 @@ public class Main extends JFrame {
             ioe.printStackTrace();
          }
       }
-   
-      
    
       class ThreadedClient extends Thread{
       
@@ -273,7 +264,8 @@ public class Main extends JFrame {
                      
                      out.writeObject(logText);
                      
-                  } catch (IOException e) {
+                  }
+                  catch (IOException e) {
                      System.out.println("Error writing log file. IO Exception " + e.getMessage() );
                   }
                }
@@ -287,29 +279,30 @@ public class Main extends JFrame {
                      sendOut("");
                      break;
                   }
-               
                   sendOut(name + ":");
                   sendOut(msg);
                   
                   System.out.println(name + ": " + msg);
                  
                //If Object read into server is not a String or a File, welp, now isn't that strange...             
-               } else {
+               }
+               else {
                   System.out.println("How did we get here?");
                }
             
             }
-         
             System.out.println(name + " has disconected");
          
             try {
                in.close();
                out.close();
                s.close();
-            } catch(IOException ioe) {
+            } 
+            catch(IOException ioe) {
                System.out.println("Error closing input, output, and socket connections. IO Exception! " + ioe.getMessage());
                return;
-            } finally{
+            } 
+            finally{
                synchronized(clients) {
                   gui.removeClient(name,receiveText);
                }
@@ -333,7 +326,10 @@ public class Main extends JFrame {
          }
       }
    }      
-      
+    
+   //Get time from timer
+   
+     
    public static void main(String [] args){
       new Main();
    }

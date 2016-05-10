@@ -12,6 +12,7 @@ public class Main extends JFrame{
    private JTextField jtfIp;
    private JTextField jtfFirstName;
    private JTextField jtfLastName;
+   private JTextField jtfPassword;
    
    //Field Attributes
    private String ritName;   //RIT Username of Client
@@ -19,6 +20,7 @@ public class Main extends JFrame{
    private String firstName; //First name of Client
    private String lastName;  //Last name of Client 
    private String fullName;  //Full name of Client
+   private String password;  //Password 
    
    //Network Attributes
    private final int PORT_NUMBER = 16789;
@@ -31,7 +33,7 @@ public class Main extends JFrame{
    
       JPanel jpMain = new JPanel(new BorderLayout()); //Main JPanel for the Beginning GUI where client inputs credentials
       
-      JPanel jpStartMain = new JPanel(new GridLayout(4,2)); //JPanel for each textfeild 
+      JPanel jpStartMain = new JPanel(new GridLayout(5,2)); //JPanel for each textfeild 
       
       JPanel jpStartButton = new JPanel(new FlowLayout());
    
@@ -51,6 +53,11 @@ public class Main extends JFrame{
       jpStartMain.add(new JLabel("   Last Name:"));
       jtfLastName = new JTextField("Tiger",10);
       jpStartMain.add(jtfLastName);
+      
+      //Password must match!
+      jpStartMain.add(new JLabel("   Password:"));
+      jtfPassword = new JTextField(10);
+      jpStartMain.add(jtfPassword);
    
       JButton jbStart = new JButton("Start Exam");
       jpStartButton.add(jbStart);
@@ -73,13 +80,12 @@ public class Main extends JFrame{
             firstName = jtfFirstName.getText();
             lastName = jtfLastName.getText();
             fullName = firstName + " " + lastName;
+            password = jtfPassword.getText();
                
             new SubmissionGUI();
             setVisible(false);              
          }
       });
-      
-
    }
    
   /**
@@ -189,17 +195,21 @@ public class Main extends JFrame{
                      receiveText.append(msg + "\n");
                      receiveText.setCaretPosition(receiveText.getDocument().getLength());
                   
-                  } else if (obj instanceof File) {
+                  }
+                  else if (obj instanceof File){
                      File logText = (File)obj;
                      
                      fileSubmitPanel.readLog(logText);
-                  } else {
+                  }
+                  else {
                      System.out.println("How did we get here?");
                   }
-               } catch(IOException e) {
+               }//End try 
+               catch(IOException e){
                   System.out.println("Could not read in from server. IO Exception " + e.getMessage());
                   break;
-               } catch(ClassNotFoundException e) {
+               }
+               catch(ClassNotFoundException e){
                   System.out.println("Could not understand the type of Object read in from server. Class Not Found Exception " + e.getMessage());
                   break;
                   //break;
@@ -207,7 +217,7 @@ public class Main extends JFrame{
             }
          }
       }
-   }
+   }//End Submission
    
   /**
    * Main method of client program. Starts client GUI
