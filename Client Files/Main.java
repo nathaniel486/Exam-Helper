@@ -229,6 +229,9 @@ public class Main extends JFrame{
                      
                      fileSubmitPanel.readLog(logText);
                   }
+                  else if (obj instanceof Long){
+                     
+                  }
                   else {
                      System.out.println("How did we get here?");
                   }

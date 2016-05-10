@@ -5,6 +5,7 @@ import javax.swing.border.*;
 import java.util.*;
 import java.io.*;
 import java.net.*;
+import java.text.*;
 
 public class Main extends JFrame {
    //Global Variables
@@ -70,6 +71,11 @@ public class Main extends JFrame {
       pack();
       setVisible(true);
       
+      //Time Field
+      DateFormat dfTime = new SimpleDateFormat("h:mm");
+      Calendar cal = Calendar.getInstance();
+      System.out.println(dfTime.format(cal.getTime()));
+                       
       //Anonymous inner class for save directory button
       jbChooseSaveDir.addActionListener( new ActionListener(){
          public void actionPerformed(ActionEvent ae){
@@ -326,9 +332,6 @@ public class Main extends JFrame {
          }
       }
    }      
-    
-   //Get time from timer
-   
      
    public static void main(String [] args){
       new Main();

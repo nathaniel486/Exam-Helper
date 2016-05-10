@@ -7,6 +7,8 @@ import java.io.*;
 import java.nio.file.*;
 import java.lang.instrument.Instrumentation;
 import java.net.*;
+import java.text.SimpleDateFormat;
+
 
 public class MainServer extends JFrame {
    private static Instrumentation instrumentation;
@@ -31,6 +33,10 @@ public class MainServer extends JFrame {
    private static final long serialVersionUID = -1624623784600240948L;
    private MainServer.Server server = null;
    private ServerGUI gui;
+   
+   //Timer Attribute
+   private String end;
+   private int hour;
 
    public MainServer(){
       //Main JPanel
@@ -114,12 +120,12 @@ public class MainServer extends JFrame {
                
                                              
                //start server communication
-                  server = new MainServer.Server();
-                  server.start();
+               server = new MainServer.Server();
+               server.start();
                //start gui
-                  gui = new ServerGUI(server,profName);
-                  Thread th = new Thread(gui);
-                  th.start();
+               gui = new ServerGUI(server,profName);
+               Thread th = new Thread(gui);
+               th.start();
                
             }
          });
@@ -158,7 +164,19 @@ public class MainServer extends JFrame {
          ThreadedClient client = clientNames.get(_name);
          return client;
       }
-   
+      public long getEndTime() throws Exception{
+         //Get time 
+         if(jcbtimeOfDay.getSelectedItem().equals("PM")){
+            hour += 12;
+         }
+         hour += Integer.parseInt(jtfhour.getText());
+         end = hour + ":" + jtfminute.getText();
+         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+         String input = end;
+         Date date = sdf.parse(input);
+         Long endTime = date.getTime();
+         return endTime;
+      }
       public void run(){      
          try{
          
@@ -211,7 +229,8 @@ public class MainServer extends JFrame {
          public void run(){
             try{
                name = (String)in.readObject();
-            
+               out.writeObject(getEndTime());
+               
                System.out.println(name + " has joined the chat.");
                
                synchronized(clients)
@@ -227,6 +246,9 @@ public class MainServer extends JFrame {
             }
             catch(ClassNotFoundException cnf){
                cnf.printStackTrace();
+            }
+            catch(Exception e){
+               e.printStackTrace();
             }
          
             //Reading in to server
