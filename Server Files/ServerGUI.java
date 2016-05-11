@@ -9,30 +9,30 @@ import java.util.*;
 
 public class ServerGUI extends JFrame implements Runnable{
 
-   private JPanel jpMain;
-   private JList<String> users;
-   private JButton send;
-   private JTextField sendText;
-   private JTextArea receiveText;
-   private JPanel textPanel;
-   private JScrollPane scrollPane,scrollReceive;
+   private JPanel jpMain;/** */
+   private JList<String> users;/** */
+   private JButton send;/** */
+   private JTextField sendText;/** */
+   private JTextArea receiveText;/** */
+   private JPanel textPanel;/** */
+   private JScrollPane scrollPane,scrollReceive;/** */
  
-   private Vector<String> connectedClients = new Vector<String>();
-   private Vector<String> unAnsweredClients = new Vector<String>();
-   private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();
-   private String currentDisplayed = null;
-   private boolean adding = false;
-   private MainServer.Server comm;
+   private Vector<String> connectedClients = new Vector<String>();/** */
+   private Vector<String> unAnsweredClients = new Vector<String>();/** */
+   private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();/** */
+   private String currentDisplayed = null;/** */
+   private boolean adding = false;/** */
+   private MainServer.Server comm;/** */
  
-   private String name;
-   private String address = "localhost";
-   private int port = 16789;
-   private Socket s = null;
-   private ObjectOutputStream  out = null;
-   private ObjectInputStream in = null;
+   private String name;/** */
+   private String address = "localhost";/** */
+   private int port = 16789;/** */
+   private Socket s = null;/** */
+   private ObjectOutputStream  out = null;/** */
+   private ObjectInputStream in = null;/** */
    private static final long serialVersionUID = 42L;
   
-  public ServerGUI(MainServer.Server _comm,String _name){
+   public ServerGUI(MainServer.Server _comm,String _name){
       name = _name;
       comm = _comm;
       
@@ -108,8 +108,8 @@ public class ServerGUI extends JFrame implements Runnable{
                }   
             }
          });
-
-         addWindowListener(
+   
+      addWindowListener(
          new WindowAdapter(){
             public void windowClosed(ActionEvent ae)
             {
@@ -123,11 +123,11 @@ public class ServerGUI extends JFrame implements Runnable{
          });
          
          
-         add(jpMain);
-         pack();
-         setDefaultCloseOperation(EXIT_ON_CLOSE);
-         setLocationRelativeTo(null);
-         setVisible(true);
+      add(jpMain);
+      pack();
+      setDefaultCloseOperation(EXIT_ON_CLOSE);
+      setLocationRelativeTo(null);
+      setVisible(true);
    }
    /**
    check to see if a particular clinet's chat is being displayed at that moment
@@ -137,49 +137,65 @@ public class ServerGUI extends JFrame implements Runnable{
    public boolean isUserDisplayed(String name){
       adding = true;
       if(!users.isSelectionEmpty()){
-         if(users.getSelectedValue().equals(name)){
+         if(users.getSelectedValue().equals(name) || users.getSelectedValue().equals("*" + name)){
             adding = false;
             return true;
          }
          else{
-            //if not displayed add user to list of unanswered clients
-            unAnsweredClients.add(name);
-            connectedClients.remove(name);
-            connectedClients.add(0,name);
-            users.setListData( connectedClients );
-            scrollPane.revalidate();
-            scrollPane.repaint();
-                           
+         
             adding = false;
             return false;      
          }
       }
       else{
-         //if nothing is displayed add user to list of unanswered clients
-         unAnsweredClients.add(name);
-         connectedClients.remove(name);
-         connectedClients.add(0,name);
-         users.setListData( connectedClients );
-         scrollPane.revalidate();
-         scrollPane.repaint();
+         
          adding = false;
          return false;
       }
       
    }
+   
+   public void addWaitingClient(String name){
+      adding = true;
+      unAnsweredClients.add(name);
+      connectedClients.remove(name);
+      connectedClients.add(0,"*" + name);
+      users.setListData( connectedClients );
+      scrollPane.revalidate();
+      scrollPane.repaint();
+      adding = false;
+   }
+   
+   
    /**
    update the screen with a new chat message
    */
    public void updateScreen(){
-      JTextArea work = userPanes.get(users.getSelectedValue());
-      receiveText.setText(work.getText());
-      userPanes.put(users.getSelectedValue(),work);
-      receiveText.setCaretPosition(receiveText.getDocument().getLength());
+      adding = true;
+      String currentUser = users.getSelectedValue().substring(1);
+      System.out.println(currentUser);
+      if(users.getSelectedValue().substring(0,1).equals("*")){
       
-      jpMain.repaint();
       
-      unAnsweredClients.remove(users.getSelectedValue());
-      
+         JTextArea work = userPanes.get(currentUser);
+         receiveText.setText(work.getText());
+         userPanes.put(currentUser,work);
+         receiveText.setCaretPosition(receiveText.getDocument().getLength());
+         
+         jpMain.repaint();
+         
+         unAnsweredClients.remove(users.getSelectedValue());
+         
+         
+         unAnsweredClients.remove(currentUser);
+         connectedClients.remove(users.getSelectedValue());
+         connectedClients.add(currentUser);
+         users.setListData( connectedClients );
+         scrollPane.revalidate();
+         scrollPane.repaint();
+         users.setSelectedIndex(connectedClients.indexOf(currentUser));
+         adding = false;
+      }
    }
    
    /**
@@ -187,10 +203,8 @@ public class ServerGUI extends JFrame implements Runnable{
    */
    public void addClient(String _name,JTextArea userArea){
       adding = true;
-      users.clearSelection();
       connectedClients.add(_name);
       userPanes.put(_name,userArea);
-      scrollReceive.add(userArea);
    	
       
       users.setListData( connectedClients );
@@ -203,10 +217,8 @@ public class ServerGUI extends JFrame implements Runnable{
    */
    public void removeClient(String _name,JTextArea userArea){
       adding = true;
-      users.clearSelection();
       connectedClients.remove(_name);
       userPanes.remove(_name,userArea);
-      scrollReceive.remove(userArea);
       
       
       users.setListData( connectedClients );
@@ -223,16 +235,14 @@ public class ServerGUI extends JFrame implements Runnable{
             sendAll(msg);
          }
          else{
-            comm.getClientName(users.getSelectedValue()).sendOut(name + ":");
-            comm.getClientName(users.getSelectedValue()).sendOut(msg);
+            comm.getClientName(users.getSelectedValue()).sendOut(name + ":",msg);
          }
       }
    }
    public void sendAll(String msg){
       for(int i = 0;i < comm.clients.size();i++){
-               comm.clients.get(i).sendOut(name + ":");
-               comm.clients.get(i).sendOut(msg);
-            }
+         comm.clients.get(i).sendOut(name + ":",msg);
+      }
    }
    
    public void disconnect(){
