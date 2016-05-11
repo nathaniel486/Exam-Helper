@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.filechooser.*;
 import java.awt.*;
 import java.awt.dnd.*;
 import java.awt.datatransfer.*;
@@ -7,22 +8,70 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 
+/**
+ * Class which allows for the accepting of *.java files via drag & drop or JFileChooser.
+ * Files are then able to be compiled and then sent to an output stream.
+ * Class is displayed as a JPanel so it is able to be placed inside a Swing-based GUI 
+ * 
+ * @author Brendon Strowe
+           Group 2
+ */
+ 
 public class FileSubmitter extends JPanel {
    
    private static final long serialVersionUID = 6156864232085906921L;
    
+  /**
+   * Output stream which accepts submitted Files
+   */
    private ObjectOutputStream oos;
+   
+  /**
+   * Displays feedback text to user regarding files submission
+   */
    private JTextArea jtaDisplay;
-   private DropTarget dt;  //Component which will receive droped items
+   
+  /**
+   * Component which will receive dropped Files
+   */
+   private DropTarget dt;
+   
+  /**
+   * JPanel which acts as the drop receiving component
+   */
    private JPanel jpDrop;
+   
+  /**
+   * JLabel which displays every file dropped into the drop target component
+   */
    private JLabel jlDropListDisplay;
    
+  /**
+   * JButton which displays JFileChooser to open a File for submission
+   */
    private JButton jbOpenFiles;
+   
+  /**
+   * JButton which clears the ArrayList of all the files chosen for submission as well as clears the jlDropListDisplay
+   */
    private JButton jbClearFiles;
+   
+  /**
+   * JButton which initiates writing of file objects to the output stream
+   */
    private JButton jbSubmitFiles;
    
+  /**
+   * List of files which have been chosen to be submitted (either via drag and drop or via JFileChooser)
+   */
    private ArrayList<File> listOfDroppedFiles;
-
+   
+   
+  /**
+   * Constructor for the FileSubmitter class.
+   * Creates a JPanel which contains all of the GUI elements.
+   * instanciates the ObjectOutputStream.
+   */
    public FileSubmitter(ObjectOutputStream _oos) {
       oos = _oos;
       
@@ -50,11 +99,11 @@ public class FileSubmitter extends JPanel {
          jbOpenFiles = new JButton("Open Files...");
          jpButtons.add(jbOpenFiles);
          
-         jbSubmitFiles = new JButton("Submit!");
+         jbSubmitFiles = new JButton("Compile & Submit!");
          jpButtons.add(jbSubmitFiles);
       add(jpButtons, BorderLayout.CENTER);
       
-      jtaDisplay = new JTextArea(10,0);
+      jtaDisplay = new JTextArea(15,0);
       jtaDisplay.setEditable(false);
       JScrollPane jscroller = new JScrollPane(jtaDisplay);
       add(jscroller, BorderLayout.SOUTH);
@@ -73,6 +122,12 @@ public class FileSubmitter extends JPanel {
       dt = new DropTarget(this, dropHandler);
    }
    
+  /**
+   * Handles what happens when the various buttons on the GUI are pressed.
+   * Clear - Clears the files in the list of files added for submission and clears the display text of the files that were added for submission
+   * Open - Displays a JFileChooser which can be used to add files for submission
+   * Submit - Goes through the list of submitted files and compiles each. Zips up all the files (submited and compiled) and writes them to the ObjectOutputStream
+   */
    class FileTransferListener implements ActionListener {
          
       public void actionPerformed(ActionEvent ae) {
@@ -80,11 +135,12 @@ public class FileSubmitter extends JPanel {
          
          //If clear button was pressed
          if (source == jbClearFiles) {
-            jlDropListDisplay.setText("");
+            jlDropListDisplay.setText("no files have been added yet...");
             
             listOfDroppedFiles.clear();
             
             jpDrop.setBackground(new Color(238,238,238));
+         
          //If Open was presesd
          } else if (source == jbOpenFiles) {
             //Create File object
@@ -92,6 +148,8 @@ public class FileSubmitter extends JPanel {
                
             //Open file via JFileChooser
             JFileChooser chooser = new JFileChooser(new File(".").getAbsolutePath()); //Open FileChooser in current directory
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("Java source code files", "java"); //Only allow *.java files to be chosen
+            chooser.setFileFilter(filter);
             int returnVal = chooser.showOpenDialog(null);   //Returns the CONSTANT value for whether the choice was Approve, Cancel, or an error
             selectedFile = chooser.getSelectedFile();
             //If a file is successfully opened
@@ -109,89 +167,133 @@ public class FileSubmitter extends JPanel {
                jlDropListDisplay.setText(displayText);
                
             }                              
-            
+         
+         //If Submit was pressed
          } else if (source == jbSubmitFiles) {
             try {  
-               //compile files
+              /*
+               * Compile files added by user
+               * - Display compile results
+               * If user wishes to submit files, zip them up and write them to the output stream
+               */
+               
+               ArrayList<File> listToBeSubmitted = new ArrayList<File>();
+               
+               //---Compile files---
                String dirName = "Practical";
 
-               StringBuffer rptErr;
-               StringBuffer rptIn;   
-               StringBuffer rptOut; 
+               StringBuffer errorReport;  //Contains the error report
+               StringBuffer inReport;     //Contains the input stream
+               StringBuffer outReport;    //Contains the output stream
                String lineIn;  
-               TreeMap resultItems = new TreeMap();
-            	  
-            	File baseDir = new File("compiledFiles");
+               //TreeMap resultItems = new TreeMap();
+               Boolean successfulCompile = null;
+               
+            	File baseDir = new File("CompiledFiles");
                baseDir.mkdirs();
             	  
-         //      String  command = "javac *.java";       // This use to work, now errors
+               //String  command = "javac *.java";       // This use to work, now errors
                for (File javaFile : listOfDroppedFiles) {
+                  
+                  //Get the path of the file to be compiled
                   String fileLocation = "" + javaFile;
-                  fileLocation = fileLocation.replaceAll("\\s", "\\ ");
-                  System.out.println(fileLocation);
-                  String command = "javac " + fileLocation;
+                  
+                  String [] command = new String[] {"javac", fileLocation}; //Terminal command to be run to compile Java file
             
-                  try{
-            //         Process proc = Runtime.getRuntime().exec(command); // String[] envp
-                     Process proc = Runtime.getRuntime().exec(command , null, baseDir); // String[] envp
-                     BufferedReader stdErr = new BufferedReader(new InputStreamReader(proc.getErrorStream() ) );
-                     BufferedReader stdIn  = new BufferedReader(new InputStreamReader(proc.getInputStream() ) );
-                     BufferedWriter stdOut = new BufferedWriter(new OutputStreamWriter(proc.getOutputStream() ) );
-                     rptErr = new StringBuffer();
-                     rptIn  = new StringBuffer();
-                     rptOut = new StringBuffer();
-                     while((lineIn=stdErr.readLine())!=null)  { rptErr.append(lineIn + "\n"); }
-                     while((lineIn=stdIn.readLine())!=null )  { rptIn.append(lineIn+"\n");    }
-                  //             while((lineIn=stdOut.readLine())!=null ) { rptOut.append(lineIn+"\n");   }
+                  try {
+
+                     Process proc = Runtime.getRuntime().exec(command , null, null); //Run command to compile files and save them in the baseDir
+                     
+                     BufferedReader stdErr = new BufferedReader(new InputStreamReader(proc.getErrorStream() ) );  //Get compiler errors
+                     BufferedReader stdIn  = new BufferedReader(new InputStreamReader(proc.getInputStream() ) );  //Get input stream
+                     BufferedWriter stdOut = new BufferedWriter(new OutputStreamWriter(proc.getOutputStream() ) );//Get compiler output stream
+                     
+                     errorReport = new StringBuffer();
+                     inReport  = new StringBuffer();
+                     outReport = new StringBuffer();
+                     
+                     //Read in error report
+                     while((lineIn=stdErr.readLine())!=null) {
+                        errorReport.append(lineIn + "\n");
+                     }
+                     
+                     //Read in inputstream
+                     while((lineIn=stdIn.readLine())!=null) {
+                        inReport.append(lineIn+"\n");
+                     }
+                     
+                  // while((lineIn=stdOut.readLine())!=null) {
+                  //    rptOut.append(lineIn+"\n");
+                  // }
+                     successfulCompile = new Boolean(errorReport.length()==0);
+                     //resultItems.put( dirName, successfulCompile ); // Compiled=T / No=F
                   
-                     resultItems.put( dirName, new Boolean(rptErr.length()==0) ); // Compiled=T / No=F
+                     System.out.println("StdIn ("+inReport.length()+") = \n"+ inReport );
+                     System.out.println("StdErr ("+errorReport.length()+")= \n"+ errorReport +"\n\n");
+                  // System.out.println("StdOut ("+rptOut.length()+")= \n"+ rptOut +"\n\n");
                   
-                     System.out.println("StdIn ("+rptIn.length()+") = \n"+ rptIn );
-                     System.out.println("StdErr ("+rptErr.length()+")= \n"+ rptErr +"\n\n");
-                  //            System.out.println("StdOut ("+rptOut.length()+")= \n"+ rptOut +"\n\n");
-                  
-                     BufferedWriter outRpt = new BufferedWriter(new FileWriter("log.txt"));
-                     outRpt.write("Source directory: " + dirName +"\n");
-                     outRpt.write("Termination exit status = " + proc.exitValue() +"\n");
-                     outRpt.write("StdIn ("+rptIn.length()+") = \n"+ rptIn +"\n");
-                     outRpt.write("StdErr ("+rptErr.length()+")= \n"+ rptErr +"\n\n\n");
-                  //              outRpt.write("StdOut ("+rptOut.length()+")= \n"+ rptOut +"\n\n\n");
-                     outRpt.close();
+                     jtaDisplay.append("Compiled file: " + javaFile.getName() +"\n");
+                     jtaDisplay.append("Termination exit status = " + proc.exitValue() +"\n");
+                     jtaDisplay.append("StdIn ("+inReport.length()+") = \n"+ inReport +"\n");
+                     jtaDisplay.append("StdErr ("+errorReport.length()+")= \n"+ errorReport +"\n\n\n");
+                  // jtaDisplay.append("StdOut ("+rptOut.length()+")= \n"+ rptOut +"\n\n\n");
+                     
+                     System.out.println(new File(javaFile.getAbsolutePath().substring(0, javaFile.getAbsolutePath().length()-5) + ".class"));
+                     
+                     File compiledFile = new File(javaFile.getAbsolutePath().substring(0, javaFile.getAbsolutePath().length()-5) + ".class");
+                     
+                     listToBeSubmitted.add(javaFile);
+                     listToBeSubmitted.add(compiledFile);
                   }
                   catch( IOException ioe ){
                      ioe.printStackTrace();
                   }
          	   }
                
+               String promptMessage = successfulCompile.equals(Boolean.TRUE) ? "Your code successfully compiled! Submit it?" : "Your code did NOT successfully compile. Submit it anyway?"; 
                
-               //zip files
-               File zipFile = new File("../zippedSubmission.zip");
+               //Prompt user if they want to submit compiled files?
+               int intOption = JOptionPane.showConfirmDialog(
+                                              null,
+                                              promptMessage,
+                                              "Submit Your Code?",
+                                              JOptionPane.YES_NO_OPTION,
+                                              JOptionPane.QUESTION_MESSAGE);
                
-               BufferedInputStream origin = null;
-               FileOutputStream dest = new FileOutputStream(zipFile);
-               ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(dest));
-               //out.setMethod(ZipOutputStream.DEFLATED);
-               byte data[] = new byte[1024];
-               
-               // get a list of files from current directory
-               for (File file : listOfDroppedFiles) {
-                  System.out.println("Adding: "+ file);  
-                  FileInputStream fi = new FileInputStream(file);
-                  origin = new BufferedInputStream(fi, 1024);
-                  ZipEntry entry = new ZipEntry(file.getPath());
-                  zipOut.putNextEntry(entry);
+               if (intOption == JOptionPane.YES_OPTION) {
+                  //zip files
+                  File zipFile = new File("Submission.zip");
                   
-                  int count;
-                  while((count = origin.read(data, 0, 1024)) != -1) {
-                     zipOut.write(data, 0, count); // Write to the Zip file
+                  BufferedInputStream origin = null;
+                  FileOutputStream dest = new FileOutputStream(zipFile);
+                  ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(dest));
+                  //out.setMethod(ZipOutputStream.DEFLATED);
+                  byte data[] = new byte[1024];
+                  
+                  // get a list of files from current directory
+                  for (File file : listToBeSubmitted) {
+                     System.out.println("Adding: "+ file);  
+                     FileInputStream fi = new FileInputStream(file);
+                     origin = new BufferedInputStream(fi, 1024);
+                     ZipEntry entry = new ZipEntry(file.getName());
+                     zipOut.putNextEntry(entry);
+                     
+                     int count;
+                     while((count = origin.read(data, 0, 1024)) != -1) {
+                        zipOut.write(data, 0, count); // Write to the Zip file
+                     }
+                     origin.close();
                   }
-                  origin.close();
+                  //Send file to server
+                  oos.writeObject(zipFile);
+                  oos.flush();
+                  
+                  zipOut.close();
+                  
+                  zipFile.delete();
+               } else {
+                  JOptionPane.showMessageDialog(null, "Compiled code NOT sent!");
                }
-               //Send file to server
-               oos.writeObject(zipFile);
-               oos.flush();
-               
-               zipOut.close();
                
                
             } 
