@@ -22,6 +22,7 @@ public class ServerGUI extends JFrame implements Runnable{
    private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();/** */
    private String currentDisplayed = null;/** */
    private boolean adding = false;/** */
+   private boolean sending = false;
    private MainServer.Server comm;/** */
  
    private String name;/** */
@@ -156,14 +157,16 @@ public class ServerGUI extends JFrame implements Runnable{
    }
    
    public void addWaitingClient(String name){
-      adding = true;
-      unAnsweredClients.add(name);
-      connectedClients.remove(name);
-      connectedClients.add(0,"*" + name);
-      users.setListData( connectedClients );
-      scrollPane.revalidate();
-      scrollPane.repaint();
-      adding = false;
+      if(!sending && !comm.getClientName(name).isFirst()){
+         adding = true;
+         unAnsweredClients.add(name);
+         connectedClients.remove(name);
+         connectedClients.add(0,"*" + name);
+         users.setListData( connectedClients );
+         scrollPane.revalidate();
+         scrollPane.repaint();
+         adding = false;
+      }
    }
    
    
@@ -173,10 +176,8 @@ public class ServerGUI extends JFrame implements Runnable{
    public void updateScreen(){
       adding = true;
       String currentUser = users.getSelectedValue().substring(1);
-      System.out.println(currentUser);
+      
       if(users.getSelectedValue().substring(0,1).equals("*")){
-      
-      
          JTextArea work = userPanes.get(currentUser);
          receiveText.setText(work.getText());
          userPanes.put(currentUser,work);
@@ -186,16 +187,25 @@ public class ServerGUI extends JFrame implements Runnable{
          
          unAnsweredClients.remove(users.getSelectedValue());
          
-         
          unAnsweredClients.remove(currentUser);
+         int location = connectedClients.indexOf(users.getSelectedValue());
          connectedClients.remove(users.getSelectedValue());
-         connectedClients.add(currentUser);
+         connectedClients.add(location,currentUser);
          users.setListData( connectedClients );
          scrollPane.revalidate();
          scrollPane.repaint();
          users.setSelectedIndex(connectedClients.indexOf(currentUser));
          adding = false;
       }
+      else{
+         JTextArea work = userPanes.get(users.getSelectedValue());
+         receiveText.setText(work.getText());
+         userPanes.put(users.getSelectedValue(),work);
+         receiveText.setCaretPosition(receiveText.getDocument().getLength());
+         
+         jpMain.repaint();
+      }
+      adding = false;
    }
    
    /**
@@ -240,9 +250,11 @@ public class ServerGUI extends JFrame implements Runnable{
       }
    }
    public void sendAll(String msg){
+      sending = true;
       for(int i = 0;i < comm.clients.size();i++){
          comm.clients.get(i).sendOut(name + ":",msg);
       }
+      sending = false;
    }
    
    public void disconnect(){

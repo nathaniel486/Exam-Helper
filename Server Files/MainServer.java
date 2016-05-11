@@ -12,7 +12,7 @@ public class MainServer extends JFrame {
    private JTextField jtfpassword;
    private JTextField jtfminute;
    private JTextField jtfhour;
-   private JComboBox jcbtimeOfDay;
+   private JComboBox<String> jcbtimeOfDay;
    private JTextField jtfprofName;
    private JTextField jtfsaveDir;
    
@@ -53,7 +53,7 @@ public class MainServer extends JFrame {
       jtfhour = new JTextField(10);
       jtfminute = new JTextField(10);
       String[] times = {"AM","PM"};
-      jcbtimeOfDay = new JComboBox(times);
+      jcbtimeOfDay = new JComboBox<String>(times);
       time.add(jtfhour);
       time.add(jtfminute);
       time.add(jcbtimeOfDay);
@@ -187,6 +187,7 @@ public class MainServer extends JFrame {
          private ObjectOutputStream out = null;
          private String name = null;
          private JTextArea receiveText;
+         private boolean firstTime = true;
       
       
          public ThreadedClient(Socket _s){
@@ -214,8 +215,7 @@ public class MainServer extends JFrame {
                   gui.addClient(name,receiveText);
                   clientNames.put(name,this);
                }
-               sendOut("");
-               sendOut(name + " has joined the chat.");
+               sendOut("",name + " has joined the chat.");
             
             }
             catch(IOException ioe){
@@ -277,6 +277,7 @@ public class MainServer extends JFrame {
                      bw.close();
                      
                      out.writeObject(logText);
+                     gui.sendAll(name + "has successfully submitted their code!");
                      
                   } 
                   catch (IOException e) {
@@ -286,16 +287,16 @@ public class MainServer extends JFrame {
                 //If Object read into server is a String, it is a Chat message
                else if (obj instanceof String) {
                
+                  firstTime = false;
+               
                   String msg = (String)obj;
                                  
                   if(msg.equalsIgnoreCase("quit")) {
-                     sendOut(name + " has left the chat");
-                     sendOut("");
+                     sendOut(name + " has left the chat","");
+                     
                      break;
                   }
-               
-                  sendOut(name + ":");
-                  sendOut(msg);
+                  sendOut(name + ":",msg);
                   
                   System.out.println(name + ": " + msg);
                  
@@ -324,12 +325,20 @@ public class MainServer extends JFrame {
                }
             }
          }
+         
+         public boolean isFirst(){
+            return firstTime;
+         }
       
-         public void sendOut(String msg){
+         public void sendOut(String msg1,String msg2){
             try{
-               out.writeObject(msg);
+               out.writeObject(msg1);
                out.flush();
-               receiveText.append(msg + "\n");
+               receiveText.append(msg1 + "\n");
+               
+               out.writeObject(msg2);
+               out.flush();
+               receiveText.append(msg2 + "\n");
             } 
             catch(IOException ioe){
                System.out.println("Error sending message. IO Exception! " + ioe.getMessage());
@@ -339,6 +348,9 @@ public class MainServer extends JFrame {
          
             if(gui.isUserDisplayed(name)){
                gui.updateScreen();
+            }
+            else{
+               gui.addWaitingClient(name);
             }
          }
       }
