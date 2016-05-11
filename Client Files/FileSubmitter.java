@@ -5,6 +5,7 @@ import java.awt.dnd.*;
 import java.awt.datatransfer.*;
 import java.awt.event.*;
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.zip.*;
 
@@ -285,7 +286,7 @@ public class FileSubmitter extends JPanel {
                      origin.close();
                   }
                   //Send file to server
-                  oos.writeObject(zipFile);
+                  oos.writeObject(Files.readAllBytes(zipFile.toPath()));
                   oos.flush();
                   
                   zipOut.close();

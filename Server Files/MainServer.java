@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.util.*;
 import java.io.*;
+import java.nio.file.*;
 import java.net.*;
 
 public class MainServer extends JFrame {
@@ -243,9 +244,9 @@ public class MainServer extends JFrame {
                }
                
                //If Object read into server is a File
-               if (obj instanceof File) {
+               if (obj instanceof byte[]) {
                //Read in File object from client
-                  File submittedFile = (File)obj;
+                  byte[] submittedFileBytes = (byte[])obj;
                   
                   //Make a directory for the submitting client
                   File studentDir = new File(saveDir, name);
@@ -257,15 +258,9 @@ public class MainServer extends JFrame {
                   //Save the submitted file to the created directory
                   try {
                      // read all data from the submitted file and save it to the studentDir
-                     FileInputStream submittedFileIn = new FileInputStream(submittedFile);
-                     FileOutputStream submittedFileOut = new FileOutputStream(new File(studentDir, submittedFile.getName()));
-                     while( submittedFileIn.available() > 0 ) {
-                        submittedFileOut.write(submittedFileIn.read());
-                     }
-                     submittedFileOut.flush();
-                     submittedFileOut.close();
-                     submittedFileIn.close();
-                                          
+                     File submittedFile = new File(studentDir, "Submission.zip");
+                     Files.write(submittedFile.toPath(), submittedFileBytes);
+                             
                      System.out.println("Saved out file");
                      
                      //Write to log file message of successful file submission
@@ -277,7 +272,6 @@ public class MainServer extends JFrame {
                      bw.close();
                      
                      out.writeObject(logText);
-                     gui.sendAll(name + "has successfully submitted their code!");
                      
                   } 
                   catch (IOException e) {
