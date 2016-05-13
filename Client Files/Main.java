@@ -4,7 +4,13 @@ import javax.swing.*;
 import java.util.*;
 import java.io.*;
 import java.net.*;
+import java.text.SimpleDateFormat;
 
+/*
+   Main Client Class to run all files and set up the client, asks for your rit username,
+   IP adress that you wish to connect to, first name, last name, and the password specified
+   by the professor then opens up our drag and drop and chat ready for the practical to start.
+*/
 public class Main extends JFrame{
   //Global Attributes
    //GUI Attributes
@@ -28,7 +34,11 @@ public class Main extends JFrame{
    
    private Main main;
    
-  /**
+   //Timer Attributes
+   private SimpleDateFormat sdf;
+   private Date date;
+   
+   /**
    * Creating and building GUI
    */
    public Main() {
@@ -58,7 +68,6 @@ public class Main extends JFrame{
       jtfLastName = new JTextField(10);
       jpStartMain.add(jtfLastName);
       
-      //Password must match!
       jpStartMain.add(new JLabel("   Password:"));
       jtfPassword = new JTextField(10);
       jpStartMain.add(jtfPassword);
@@ -78,37 +87,39 @@ public class Main extends JFrame{
       setResizable(false);
       
       //Anonymous inner class for the start button to start the SubmissionGUI
-      jbStart.addActionListener( new ActionListener(){
-         public void actionPerformed(ActionEvent ae) {
+      jbStart.addActionListener( 
+         new ActionListener(){
+            public void actionPerformed(ActionEvent ae) {
             //Read in values from GUI
             
-            ritName = jtfRitName.getText();
-            ip = jtfIp.getText();
-            firstName = jtfFirstName.getText();
-            lastName = jtfLastName.getText();
-            fullName = firstName + " " + lastName;
-            password = jtfPassword.getText();
+               ritName = jtfRitName.getText();
+               ip = jtfIp.getText();
+               firstName = jtfFirstName.getText();
+               lastName = jtfLastName.getText();
+               fullName = firstName + " " + lastName;
+               password = jtfPassword.getText();
             
-            if(ritName.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter your RIT userName.");
-               return;
-            }
-            else if(ip.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter the IP address of the server you wish to connect to.");
-            }
-            else if(firstName.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter your first name.");
-            }  
-            else if(lastName.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter your last name.");
-            }
-            else{
-               new SubmissionGUI();
-            }
+               //All validation for start screen
+               if(ritName.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter your RIT userName.");
+                  return;
+               }
+               else if(ip.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter the IP address of the server you wish to connect to.");
+               }
+               else if(firstName.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter your first name.");
+               }  
+               else if(lastName.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter your last name.");
+               }
+               else{
+                  new SubmissionGUI();
+               }
             
                
-         }
-      });
+            }
+         });
    }
    
   /**
@@ -162,24 +173,41 @@ public class Main extends JFrame{
          add(jpMain);
          
          JMenuBar jmbar = new JMenuBar();
-            JMenu jmFile = new JMenu("File");
-               JMenuItem jmiFileQuit = new JMenuItem("Quit");
-               JMenuItem jmiFileLogout = new JMenuItem("Logout");
-               jmFile.add(jmiFileQuit);
-               jmFile.add(jmiFileLogout); 
-            jmbar.add(jmFile);
+         JMenu jmFile = new JMenu("File");
+         JMenuItem jmiFileQuit = new JMenuItem("Quit");
+         jmiFileQuit.addActionListener(
+            new ActionListener(){
+               public void actionPerformed(ActionEvent a){
+                  try{
+                     System.exit(0);
+                  }
+                  catch(Exception e){
+                     System.out.println(e);
+                  }
+               }
+            });
+         JMenuItem jmiFileLogout = new JMenuItem("Logout");
+         jmFile.add(jmiFileQuit);
+         jmFile.add(jmiFileLogout); 
+         jmbar.add(jmFile);
             
-            JMenu jmEdit = new JMenu("Edit");
-               JMenuItem jmiEditPort = new JMenuItem("Change Port");
-               jmEdit.add(jmiEditPort);
-            jmbar.add(jmEdit);
+         JMenu jmEdit = new JMenu("Edit");
+         JMenuItem jmiEditPort = new JMenuItem("Change Port");
+         jmEdit.add(jmiEditPort);
+         jmbar.add(jmEdit);
          setJMenuBar(jmbar);
          
-         //Panel for nathaniel/chat   
+         //Panel for chat   
          jpMain.add(chatPanel, BorderLayout.EAST);
       
-         //Panel for Brendon/FileTransfer
+         //Panel for FileTransfer
          jpMain.add(fileSubmitPanel, BorderLayout.WEST); 
+         
+         //Panel for Timer
+         Clock time = new Clock();
+         jpMain.add(time, BorderLayout.NORTH);
+         Thread th = new Thread(time);
+         th.start();
                   
          setVisible(true);
          setDefaultCloseOperation( EXIT_ON_CLOSE );
@@ -187,20 +215,42 @@ public class Main extends JFrame{
          setResizable(false);
          setLocationRelativeTo(null);
          
-         addWindowListener( new WindowAdapter() {
-            public void windowClosing(WindowEvent we){
-               System.out.println("Closing the Client...");
-               try {
-                  out.writeObject("quit");
-                  out.flush();
-                  System.exit(0);
-               } catch(IOException e)  {
-                  System.out.println("Error closing the client. IO Exception " + e.getMessage());
+         addWindowListener( 
+            new WindowAdapter() {
+               public void windowClosing(WindowEvent we){
+                  System.out.println("Closing the Client...");
+                  try {
+                     out.writeObject("quit");
+                     out.flush();
+                     System.exit(0);
+                  } 
+                  catch(IOException e)  {
+                     System.out.println("Error closing the client. IO Exception " + e.getMessage());
+                  }	
                }	
-            }	
-         });
+            });
       }
-      
+      /*
+      *Timer Class for top timer so you know how much time is left
+      */
+      class Clock extends JLabel implements Runnable{
+         public void run()
+         {
+            int delay = 1000;
+         
+            new javax.swing.Timer(delay, 
+               new ActionListener(){
+                  public void actionPerformed(ActionEvent ae)
+                  {
+                     setText(sdf.format(date));
+                     Font font = new Font("Arial", Font.BOLD, 30);
+                     setFont(font);
+                     
+                  }
+               }).start();
+         
+         }
+      }
      /**
       * class which handles the reading in of objects from the server. Depending on what type of object
       * is read in from the server, different things happen.
@@ -230,7 +280,10 @@ public class Main extends JFrame{
                      fileSubmitPanel.readLog(logText);
                   }
                   else if (obj instanceof Long){
-                     
+                     long cur = System.currentTimeMillis();
+                     long timer = (long)obj - cur;
+                     date = new Date(timer);
+                     sdf = new SimpleDateFormat("HH:mm:ss");
                   }
                   else {
                      System.out.println("How did we get here?");
@@ -252,9 +305,9 @@ public class Main extends JFrame{
    
    
   /**
-   * Main method of client program. Starts client GUI
+   Main method of client program. Starts client GUI
    */
    public static void main(String[]args){
-     new Main();
+      new Main();
    }
 }

@@ -9,7 +9,10 @@ import java.lang.instrument.Instrumentation;
 import java.net.*;
 import java.text.SimpleDateFormat;
 
-
+/*
+The main server class runs everything on the server side, this is the 
+code that the professor would run before a test
+*/
 public class MainServer extends JFrame {
    private static Instrumentation instrumentation;
    
@@ -201,7 +204,9 @@ public class MainServer extends JFrame {
       }
    
       
-   
+      /*
+      *Allows for multithreaded server. Runs several threads to connect to multiple servers.
+      */
       class ThreadedClient extends Thread{
       
          private Socket s = null;
@@ -230,6 +235,7 @@ public class MainServer extends JFrame {
             try{
                name = (String)in.readObject();
                out.writeObject(getEndTime());
+               out.flush();
                
                System.out.println(name + " has joined the chat.");
                
@@ -379,7 +385,9 @@ public class MainServer extends JFrame {
          }
       }
    }      
-      
+   /*
+   Main method makes a MainServer object and runs the program through the constructor
+   */   
    public static void main(String [] args){
       new MainServer();
    }
