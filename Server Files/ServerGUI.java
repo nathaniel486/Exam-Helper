@@ -7,30 +7,38 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+   This class handles the communication via chat between teh professor and the student.  
+   each student has a private chat witht the professor.
+   The professor also has the capability to send a broadcast message to every client.
+   @author Nathaniel Larrimore
+   Team 2: Team Nineteen
+*/
+
 public class ServerGUI extends JFrame implements Runnable{
 
-   private JPanel jpMain;/** */
-   private JList<String> users;/** */
-   private JButton send;/** */
-   private JTextField sendText;/** */
-   private JTextArea receiveText;/** */
-   private JPanel textPanel;/** */
+   private JPanel jpMain;/**JPanel that holds eveything*/
+   private JList<String> users;/**JList to display the users that are connected*/
+   private JButton send;/**button to send the text*/
+   private JTextField sendText;/**Field to hold the text you wish to send*/
+   private JTextArea receiveText;/**Field to hold the all previously sent messages*/
+   private JPanel textPanel;/**JPanel to hold the sendText and send button*/
    private JScrollPane scrollPane,scrollReceive;/** */
  
-   private Vector<String> connectedClients = new Vector<String>();/** */
-   private Vector<String> unAnsweredClients = new Vector<String>();/** */
-   private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();/** */
-   private String currentDisplayed = null;/** */
-   private boolean adding = false;/** */
-   private boolean sending = false;
-   private MainServer.Server comm;/** */
+   private Vector<String> connectedClients = new Vector<String>();/**Holds all the names of the connected clients*/
+   private Vector<String> unAnsweredClients = new Vector<String>();/**holds all the names of clients waiting for a response*/
+   private Hashtable<String, JTextArea> userPanes = new Hashtable<String,JTextArea>();/**Holds the name of the client, and their particular chat history*/
+   private String currentDisplayed = null;/**Is the user sending a message displayed*/
+   private boolean adding = false;/**used for making a change to the JList*/
+   private boolean sending = false;/**used for the server sending a message*/
+   private MainServer.Server comm;/**the comunication portion of the server*/
  
-   private String name;/** */
-   private String address = "localhost";/** */
-   private int port = 16789;/** */
-   private Socket s = null;/** */
-   private ObjectOutputStream  out = null;/** */
-   private ObjectInputStream in = null;/** */
+   private String name;/**name of the professor*/
+   private String address = "localhost";/**address to connect to*/
+   private int port = 16789;/**port to bind on*/
+   private Socket s = null;/**socket to send over*/
+   private ObjectOutputStream  out = null;/**stream used to send*/
+   private ObjectInputStream in = null;/**stream used to recieve*/
    private static final long serialVersionUID = 42L;
   
    public ServerGUI(MainServer.Server _comm,String _name){
@@ -210,6 +218,8 @@ public class ServerGUI extends JFrame implements Runnable{
    
    /**
    Add a client to the list of connected clients
+   @param _name of the user to be added
+   @param userArea JTextArea to hold the chat history for this client
    */
    public void addClient(String _name,JTextArea userArea){
       adding = true;
@@ -224,6 +234,8 @@ public class ServerGUI extends JFrame implements Runnable{
    }
    /**
    Remove a client from list of connected clients
+   @param _name of the user to be removed
+   @param userArea JTextArea to hold the chat history for this client
    */
    public void removeClient(String _name,JTextArea userArea){
       adding = true;
@@ -238,6 +250,7 @@ public class ServerGUI extends JFrame implements Runnable{
    }
    /**
    send message to particular client
+   @param msg String to be sent from the server
    */
    public void sendOut(String msg){
       if(!users.isSelectionEmpty()){   
