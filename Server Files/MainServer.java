@@ -5,9 +5,12 @@ import javax.swing.border.*;
 import java.util.*;
 import java.io.*;
 import java.nio.file.*;
+import java.lang.instrument.Instrumentation;
 import java.net.*;
 
 public class MainServer extends JFrame {
+   private static Instrumentation instrumentation;
+   
    //Global Variables
    //GUI Attributes
    private JTextField jtfpassword;
@@ -246,7 +249,9 @@ public class MainServer extends JFrame {
                //If Object read into server is a File
                if (obj instanceof byte[]) {
                //Read in File object from client
+                  //System.out.println((int)instrumentation.getObjectSize(obj));
                   byte[] submittedFileBytes = (byte[])obj;
+                  System.out.println("Size : " + submittedFileBytes.length);
                   
                   //Make a directory for the submitting client
                   File studentDir = new File(saveDir, name);
@@ -259,7 +264,10 @@ public class MainServer extends JFrame {
                   try {
                      // read all data from the submitted file and save it to the studentDir
                      File submittedFile = new File(studentDir, "Submission.zip");
-                     Files.write(submittedFile.toPath(), submittedFileBytes);
+                     
+                     FileOutputStream fileOut = new FileOutputStream(submittedFile);
+                     fileOut.write(submittedFileBytes);
+                     fileOut.close();
                              
                      System.out.println("Saved out file");
                      
