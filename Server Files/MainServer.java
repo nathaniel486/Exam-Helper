@@ -126,7 +126,7 @@ public class MainServer extends JFrame {
                server = new MainServer.Server();
                server.start();
                //start gui
-               gui = new ServerGUI(server,profName);
+               gui = new ServerGUI(server,profName,password);
                Thread th = new Thread(gui);
                th.start();
                
@@ -233,10 +233,24 @@ public class MainServer extends JFrame {
       
          public void run(){
             try{
-               name = (String)in.readObject();
-               out.writeObject(getEndTime());
-               out.flush();
+            
+               String pass = (String)in.readObject();
                
+               if(pass.equals(password) || password.equals("")){
+                  out.writeObject("OK");
+                  out.flush();
+               }
+               else{
+                  out.writeObject("ERROR");
+                  out.flush();
+                  return;
+               }
+            
+               name = (String)in.readObject();
+               if(!jtfhour.getText().equals("")){
+                  out.writeObject(getEndTime());
+                  out.flush();
+               }
                System.out.println(name + " has joined the chat.");
                
                synchronized(clients)

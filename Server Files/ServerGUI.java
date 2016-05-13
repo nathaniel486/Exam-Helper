@@ -34,6 +34,7 @@ public class ServerGUI extends JFrame implements Runnable{
    private MainServer.Server comm;/**the comunication portion of the server*/
  
    private String name;/**name of the professor*/
+   private String pass;/**Password for the server*/
    private String address = "localhost";/**address to connect to*/
    private int port = 16789;/**port to bind on*/
    private Socket s = null;/**socket to send over*/
@@ -41,9 +42,10 @@ public class ServerGUI extends JFrame implements Runnable{
    private ObjectInputStream in = null;/**stream used to recieve*/
    private static final long serialVersionUID = 42L;
   
-   public ServerGUI(MainServer.Server _comm,String _name){
+   public ServerGUI(MainServer.Server _comm,String _name,String pass){
       name = _name;
       comm = _comm;
+      this.pass = pass;
       
       jpMain = new JPanel();
       jpMain.setLayout(new BorderLayout());   
@@ -308,12 +310,18 @@ public class ServerGUI extends JFrame implements Runnable{
          
       try
       {
+         out.writeObject(pass);
+         out.flush();
+         in.readObject();
          out.writeObject(name);
          out.flush();
       }
       catch(IOException ioe)
       {
          ioe.printStackTrace();
+      }
+      catch(ClassNotFoundException cnf){
+         cnf.printStackTrace();
       }
    }
 
