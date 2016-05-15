@@ -289,26 +289,10 @@ public class FileSubmitter extends JPanel {
                   //---Send file to server---
                   
                   //Write File Object zipFile to byte[] array
-                  byte[] bytes = null;
-                  ByteArrayOutputStream bos = null;
-                  ObjectOutputStream objstr = null;
-                  try {
-                      bos = new ByteArrayOutputStream();
-                      objstr = new ObjectOutputStream(bos);
-                      objstr.writeObject(listOfDroppedFiles.get(0));
-                      objstr.flush();
-                      bytes = bos.toByteArray();
-                  } finally {
-                      if (objstr != null) {
-                          objstr.close();
-                      }
-                      if (bos != null) {
-                          bos.close();
-                      }
-                  }
-                  
-                  //Write byte[] to outputStream
-                  oos.writeObject(bytes);
+                  byte[] mybytearray = new byte[(int) zipFile.length()];
+                  BufferedInputStream bis = new BufferedInputStream(new FileInputStream(zipFile));
+                  bis.read(mybytearray, 0, mybytearray.length);
+                  oos.writeObject(mybytearray);
                   oos.flush();
                   
                   zipOut.close();

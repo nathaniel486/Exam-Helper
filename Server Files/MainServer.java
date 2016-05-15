@@ -297,29 +297,31 @@ public class MainServer extends JFrame {
                   break;
                }
                
-               //If Object read into server is a File
+               //If Object read into server is a byte[]
                if (obj instanceof byte[]) {
                //Read in File object from client
-                  //System.out.println((int)instrumentation.getObjectSize(obj));
-                  byte[] submittedFileBytes = (byte[])obj;
-                  System.out.println("Size : " + submittedFileBytes.length);
                   
                   //Make a directory for the submitting client
                   File studentDir = new File(saveDir, name);
                   studentDir.mkdirs();
                   
-                  System.out.println(studentDir.getPath());
+                  //Make log file to send back to client when done with server work
                   File logText = new File(studentDir, "logFile.txt");
+                  
                   
                   //Save the submitted file to the created directory
                   try {
-                     // read all data from the submitted file and save it to the studentDir
+                     // Create zip file for storing read in zip file data
                      File submittedFile = new File(studentDir, "Submission.zip");
                      
-                     FileOutputStream fileOut = new FileOutputStream(submittedFile);
-                     fileOut.write(submittedFileBytes);
-                     fileOut.close();
-                             
+                     byte[] mybytearray = new byte[5024];
+                     FileOutputStream fos = new FileOutputStream(submittedFile);
+                     BufferedOutputStream bos = new BufferedOutputStream(fos);
+                     mybytearray = (byte[])obj;
+                     bos.write(mybytearray, 0, mybytearray.length);
+                     bos.close();
+                     
+                                                  
                      System.out.println("Saved out file");
                      
                      //Write to log file message of successful file submission
