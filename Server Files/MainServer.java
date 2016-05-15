@@ -167,17 +167,26 @@ public class MainServer extends JFrame {
          ThreadedClient client = clientNames.get(_name);
          return client;
       }
-      public long getEndTime() throws Exception{
+      public Long getEndTime() throws Exception{
          //Get time 
+         int minute;
+         Calendar cal = Calendar.getInstance();
+         //JOptionPane.showMessageDialog(null,"" + cal.getTimeInMillis());
+         hour = Integer.parseInt(jtfhour.getText());
+         
          if(jcbtimeOfDay.getSelectedItem().equals("PM")){
-            hour += 12;
+            hour = hour + 12;
          }
-         hour += Integer.parseInt(jtfhour.getText());
-         end = hour + ":" + jtfminute.getText();
-         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-         String input = end;
-         Date date = sdf.parse(input);
-         Long endTime = date.getTime();
+         
+         
+         minute = Integer.parseInt(jtfminute.getText());
+         
+         cal.set(Calendar.HOUR_OF_DAY, hour);
+         cal.set(Calendar.MINUTE,minute);
+         cal.set(Calendar.SECOND,0);
+         
+         Long endTime = cal.getTimeInMillis();
+         //JOptionPane.showMessageDialog(null,"" + cal.getTimeInMillis());
          return endTime;
       }
       public void run(){      
