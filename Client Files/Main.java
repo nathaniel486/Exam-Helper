@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.util.*;
 import java.io.*;
 import java.net.*;
+import java.text.*;
 
 public class Main extends JFrame{
   //Global Attributes
@@ -78,37 +79,38 @@ public class Main extends JFrame{
       setResizable(false);
       
       //Anonymous inner class for the start button to start the SubmissionGUI
-      jbStart.addActionListener( new ActionListener(){
-         public void actionPerformed(ActionEvent ae) {
+      jbStart.addActionListener( 
+         new ActionListener(){
+            public void actionPerformed(ActionEvent ae) {
             //Read in values from GUI
             
-            ritName = jtfRitName.getText();
-            ip = jtfIp.getText();
-            firstName = jtfFirstName.getText();
-            lastName = jtfLastName.getText();
-            fullName = firstName + " " + lastName;
-            password = jtfPassword.getText();
+               ritName = jtfRitName.getText();
+               ip = jtfIp.getText();
+               firstName = jtfFirstName.getText();
+               lastName = jtfLastName.getText();
+               fullName = firstName + " " + lastName;
+               password = jtfPassword.getText();
             
-            if(ritName.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter your RIT userName.");
-               return;
-            }
-            else if(ip.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter the IP address of the server you wish to connect to.");
-            }
-            else if(firstName.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter your first name.");
-            }  
-            else if(lastName.equals("")){
-               JOptionPane.showMessageDialog(null,"Please enter your last name.");
-            }
-            else{
-               new SubmissionGUI();
-            }
+               if(ritName.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter your RIT userName.");
+                  return;
+               }
+               else if(ip.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter the IP address of the server you wish to connect to.");
+               }
+               else if(firstName.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter your first name.");
+               }  
+               else if(lastName.equals("")){
+                  JOptionPane.showMessageDialog(null,"Please enter your last name.");
+               }
+               else{
+                  new SubmissionGUI();
+               }
             
                
-         }
-      });
+            }
+         });
    }
    
   /**
@@ -119,8 +121,14 @@ public class Main extends JFrame{
       private ObjectOutputStream  out = null;
       private ObjectInputStream in = null;
       
+      private JPanel jpMain;
+      
       private ChatClient chatPanel;
       private JTextArea receiveText;
+      private JPanel time;
+      private Clock clock;
+      private CountDown remainingTime;
+      private JLabel infinity = new JLabel("\u221E");
       
       private FileSubmitter fileSubmitPanel;
       
@@ -153,6 +161,14 @@ public class Main extends JFrame{
             main.setVisible(false);
             
             (new Reading()).start();
+            
+            clock = new Clock();
+            
+            Thread th = new Thread(clock);
+            
+            th.start();
+            
+            
          } 
          catch (UnknownHostException e) {
             System.out.println("Unknown Host Exception! " + e.getMessage());
@@ -171,21 +187,21 @@ public class Main extends JFrame{
         
         //Create main GUI
          //Creation of top menu bar
-         JPanel jpMain = new JPanel(new BorderLayout());
+         jpMain = new JPanel(new BorderLayout());
          add(jpMain);
          
          JMenuBar jmbar = new JMenuBar();
-            JMenu jmFile = new JMenu("File");
-               JMenuItem jmiFileQuit = new JMenuItem("Quit");
-               JMenuItem jmiFileLogout = new JMenuItem("Logout");
-               jmFile.add(jmiFileQuit);
-               jmFile.add(jmiFileLogout); 
-            jmbar.add(jmFile);
+         JMenu jmFile = new JMenu("File");
+         JMenuItem jmiFileQuit = new JMenuItem("Quit");
+         JMenuItem jmiFileLogout = new JMenuItem("Logout");
+         jmFile.add(jmiFileQuit);
+         jmFile.add(jmiFileLogout); 
+         jmbar.add(jmFile);
             
-            JMenu jmEdit = new JMenu("Edit");
-               JMenuItem jmiEditPort = new JMenuItem("Change Port");
-               jmEdit.add(jmiEditPort);
-            jmbar.add(jmEdit);
+         JMenu jmEdit = new JMenu("Edit");
+         JMenuItem jmiEditPort = new JMenuItem("Change Port");
+         jmEdit.add(jmiEditPort);
+         jmbar.add(jmEdit);
          setJMenuBar(jmbar);
          
          //Panel for chat   
@@ -193,6 +209,17 @@ public class Main extends JFrame{
       
          //Panel for FileTransfer
          jpMain.add(fileSubmitPanel, BorderLayout.WEST); 
+         
+         //Clock for time
+         time = new JPanel(new FlowLayout());
+         
+         time.add(new JLabel("Current time:    "));
+         time.add(clock);
+         time.add(new JLabel("Time left:    "));
+         
+         time.add(infinity);
+         jpMain.add(time,BorderLayout.NORTH);
+             
                   
          setVisible(true);
          setDefaultCloseOperation( EXIT_ON_CLOSE );
@@ -200,18 +227,23 @@ public class Main extends JFrame{
          setResizable(false);
          setLocationRelativeTo(null);
          
-         addWindowListener( new WindowAdapter() {
-            public void windowClosing(WindowEvent we){
-               System.out.println("Closing the Client...");
-               try {
-                  out.writeObject("quit");
-                  out.flush();
-                  System.exit(0);
-               } catch(IOException e)  {
-                  System.out.println("Error closing the client. IO Exception " + e.getMessage());
+         addWindowListener( 
+            new WindowAdapter() {
+               public void windowClosing(WindowEvent we){
+                  System.out.println("Closing the Client...");
+                  try {
+                     out.writeObject("quit");
+                     out.flush();
+                     in.close();
+                     out.close();
+                     s.close();
+                     System.exit(0);
+                  } 
+                  catch(IOException e)  {
+                     System.out.println("Error closing the client. IO Exception " + e.getMessage());
+                  }	
                }	
-            }	
-         });
+            });
       }
       
      /**
@@ -243,7 +275,21 @@ public class Main extends JFrame{
                      fileSubmitPanel.readLog(logText);
                   }
                   else if(obj instanceof Long){
-                  
+                     Calendar cal = Calendar.getInstance();
+                     Long timer = (Long)obj;
+                     System.out.println("" + timer);
+                     System.out.println("" + cal.getTimeInMillis());
+                     
+                     
+                     remainingTime = new CountDown((timer - cal.getTimeInMillis()));
+            
+                     Thread th2 = new Thread(remainingTime);
+               
+                     th2.start();
+                     
+                     time.remove(infinity);
+                     time.add(remainingTime);
+                     jpMain.repaint();
                   }
                   else {
                      System.out.println("How did we get here?");
@@ -261,6 +307,58 @@ public class Main extends JFrame{
             }
          }
       }
+      
+      class Clock extends JLabel implements Runnable
+      {
+         private static final long serialVersionUID = 42L;
+         public void run()
+         {
+            Font font = new Font(null,Font.BOLD + Font.ITALIC,24);
+            setFont(font);
+            setForeground(new Color(148,0,211));         
+             new javax.swing.Timer(1000,
+               new ActionListener(){
+                  public void actionPerformed(ActionEvent ae)
+                  {
+                     setText(new SimpleDateFormat("hh:mm:ss a").format(new Date()));
+                  
+                  }
+               }).start();
+                      
+         }
+      }
+      
+      class CountDown extends JLabel implements Runnable{
+         
+         private static final long serialVersionUID = 42L;
+         private long timeLeft;
+         
+         public CountDown(long _timeLeft){
+            timeLeft = _timeLeft / 1000;
+         }
+         public void run()
+         {
+            Font font = new Font(null,Font.BOLD + Font.ITALIC,24);
+            setFont(font);
+            setForeground(new Color(148,0,211));         
+             new javax.swing.Timer(1000,
+               new ActionListener(){
+                  public void actionPerformed(ActionEvent ae)
+                  {
+                     timeLeft--;
+                     int seconds = (int)timeLeft % 60;
+                     int hours = (int)timeLeft / 3600;
+                     int minutes = (int)(timeLeft - (hours * 3600)) / 60;
+                     setText(hours + ":" + minutes + ":" + seconds);
+                     //setText(new SimpleDateFormat("hh:mm:ss a").format(timeLeft));
+                     if(timeLeft <= 0){
+                        JOptionPane.showMessageDialog(null,"Ran out of time");
+                     }
+                  }
+               }).start();
+                      
+         }
+      }
    }//End Submission
    
    
@@ -268,6 +366,6 @@ public class Main extends JFrame{
    * Main method of client program. Starts client GUI
    */
    public static void main(String[]args){
-     new Main();
+      new Main();
    }
 }
