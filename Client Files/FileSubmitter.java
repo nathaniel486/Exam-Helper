@@ -285,6 +285,7 @@ public class FileSubmitter extends JPanel {
                      }
                      origin.close();
                   }
+                  zipOut.close();
                   
                   //---Send file to server---
                   
@@ -295,9 +296,8 @@ public class FileSubmitter extends JPanel {
                   oos.writeObject(mybytearray);
                   oos.flush();
                   
-                  zipOut.close();
+                  zipFile.delete();
                   
-                  //zipFile.delete();
                } else {
                   JOptionPane.showMessageDialog(null, "Compiled code NOT sent!");
                }

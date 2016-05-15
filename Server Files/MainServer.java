@@ -319,6 +319,7 @@ public class MainServer extends JFrame {
                      BufferedOutputStream bos = new BufferedOutputStream(fos);
                      mybytearray = (byte[])obj;
                      bos.write(mybytearray, 0, mybytearray.length);
+                     bos.flush();
                      bos.close();
                      
                                                   
