@@ -38,8 +38,9 @@ public class MainServer extends JFrame {
    private ServerGUI gui;
    
    //Timer Attribute
-   private String end;
-   private int hour;
+   private int hour = 0;
+   private int minute = 0;
+   private long timeToEnd = 0;
 
    public MainServer(){
       //Main JPanel
@@ -61,7 +62,7 @@ public class MainServer extends JFrame {
       jpStartMain.add(jtfsaveDir);
       jtfsaveDir.setEnabled(false);
       
-      jpStartMain.add(new JLabel("     End Time:"));
+      jpStartMain.add(new JLabel("     End Time (optional):"));
       JPanel time = new JPanel(new FlowLayout());
       jtfhour = new JTextField(10);
       jtfminute = new JTextField(10);
@@ -73,7 +74,7 @@ public class MainServer extends JFrame {
       jpStartMain.add(time);
    
       
-      jpStartMain.add(new JLabel("     Password:"));
+      jpStartMain.add(new JLabel("     Password (optional):"));
       jtfpassword = new JTextField("",10);
       jpStartMain.add(jtfpassword);
       
@@ -112,15 +113,57 @@ public class MainServer extends JFrame {
             public void actionPerformed(ActionEvent ae){
             //Read in values from GUI
                
-               profName = jtfprofName.getText();
-               //endTime = jtfendTime.getText();
+               profName = jtfprofName.getText()  + " BROADCAST";
                password = jtfpassword.getText();
-               setVisible(false);
                
-               if(profName.equals("")){
-                  profName = "Professor";   
+               
+               if(jtfprofName.getText().equals("")){
+                  profName = "Professor"  + " BROADCAST";   
                }
                
+               if(jtfhour.getText().equals("")){
+                  hour = 0;
+                  minute = 0;
+               }
+               else{
+                  try{
+                     hour = Integer.parseInt(jtfhour.getText());
+                     
+                     if(hour > 12){
+                        JOptionPane.showMessageDialog(null,"Please enter a valid time.");
+                        return;
+                     }
+                     
+                     if(hour == 12 && jcbtimeOfDay.getSelectedItem().equals("AM")){
+                        hour = 0;
+                     }
+                     
+                     if(!jtfminute.getText().equals("")){
+                        minute = Integer.parseInt(jtfminute.getText());
+                        if(minute > 59){
+                           JOptionPane.showMessageDialog(null,"Please enter a valid time.");
+                           return;
+                        }
+                     }
+                     else{
+                        minute = 0;
+                     }
+                     
+                     calcEndTime();
+                     Calendar cal = Calendar.getInstance();
+                        
+                     if(System.currentTimeMillis() >= timeToEnd){
+                        JOptionPane.showMessageDialog(null,"Please enter a time in the future.");
+                        return;
+                     }
+                  }
+                  catch(NumberFormatException cfe){
+                     JOptionPane.showMessageDialog(null,"Please enter a valid time.");
+                     return;
+                  }
+               }
+               
+               setVisible(false);
                                              
                //start server communication
                server = new MainServer.Server();
@@ -129,6 +172,9 @@ public class MainServer extends JFrame {
                gui = new ServerGUI(server,profName,password);
                Thread th = new Thread(gui);
                th.start();
+               gui.addCountDown(timeToEnd);
+
+               
                
             }
          });
@@ -146,12 +192,28 @@ public class MainServer extends JFrame {
          //window listener to close window
       addWindowListener(
          new WindowAdapter(){
-            public void windowClosing(ActionEvent ae)
+            public void windowClosed(ActionEvent ae)
             {
                System.exit(0);
             
             }
          });
+   }
+   
+   public void calcEndTime(){
+         //Get time 
+      Calendar cal = Calendar.getInstance();
+         
+      if(jcbtimeOfDay.getSelectedItem().equals("PM")){
+         hour = hour + 12;
+      }
+      minute = Integer.parseInt(jtfminute.getText());
+         
+      cal.set(Calendar.HOUR_OF_DAY, hour);
+      cal.set(Calendar.MINUTE,minute);
+      cal.set(Calendar.SECOND,0);
+         
+      timeToEnd = cal.getTimeInMillis();
    }
    
   /*
@@ -167,28 +229,7 @@ public class MainServer extends JFrame {
          ThreadedClient client = clientNames.get(_name);
          return client;
       }
-      public Long getEndTime() throws Exception{
-         //Get time 
-         int minute;
-         Calendar cal = Calendar.getInstance();
-         //JOptionPane.showMessageDialog(null,"" + cal.getTimeInMillis());
-         hour = Integer.parseInt(jtfhour.getText());
-         
-         if(jcbtimeOfDay.getSelectedItem().equals("PM")){
-            hour = hour + 12;
-         }
-         
-         
-         minute = Integer.parseInt(jtfminute.getText());
-         
-         cal.set(Calendar.HOUR_OF_DAY, hour);
-         cal.set(Calendar.MINUTE,minute);
-         cal.set(Calendar.SECOND,0);
-         
-         Long endTime = cal.getTimeInMillis();
-         //JOptionPane.showMessageDialog(null,"" + cal.getTimeInMillis());
-         return endTime;
-      }
+      
       public void run(){      
          try{
          
@@ -256,10 +297,9 @@ public class MainServer extends JFrame {
                }
             
                name = (String)in.readObject();
-               if(!jtfhour.getText().equals("")){
-                  out.writeObject(getEndTime());
+                  out.writeObject(timeToEnd);
                   out.flush();
-               }
+               
                System.out.println(name + " has joined the chat.");
                
                synchronized(clients)
@@ -348,7 +388,7 @@ public class MainServer extends JFrame {
                   String msg = (String)obj;
                                  
                   if(msg.equalsIgnoreCase("quit")) {
-                     sendOut(name + " has left the chat","");
+                     //sendOut(name + " has left the chat"," ");
                      
                      break;
                   }

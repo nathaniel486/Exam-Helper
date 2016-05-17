@@ -6,6 +6,7 @@ import javax.swing.border.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.text.*;
 
 /**
    This class handles the communication via chat between teh professor and the student.  
@@ -41,6 +42,14 @@ public class ServerGUI extends JFrame implements Runnable{
    private ObjectOutputStream  out = null;/**stream used to send*/
    private ObjectInputStream in = null;/**stream used to recieve*/
    private static final long serialVersionUID = 42L;
+   private JLabel IP;
+   private CountDown remainingTime;
+   private JLabel infinity = new JLabel("\u221E");
+   private JPanel time;
+   private Font headerFont = new Font(null,Font.BOLD + Font.ITALIC,24);
+   private Font subFont = new Font(null,Font.BOLD + Font.ITALIC,18);
+   private Color fontColor = new Color(0,0,255);
+
   
    public ServerGUI(MainServer.Server _comm,String _name,String pass){
       name = _name;
@@ -49,6 +58,14 @@ public class ServerGUI extends JFrame implements Runnable{
       
       jpMain = new JPanel();
       jpMain.setLayout(new BorderLayout());   
+      try{
+         IP = new JLabel();
+         IP.setText("  " + InetAddress.getLocalHost().getHostAddress());
+      }
+      catch(UnknownHostException uhe){
+         uhe.printStackTrace();
+      }
+      
       
       //list of connected users      
       users = new JList<String>();
@@ -76,11 +93,11 @@ public class ServerGUI extends JFrame implements Runnable{
       send = new JButton("Send");
       
       //send messages
-      sendText = new JTextField(40);
+      sendText = new JTextField(70);
       sendText.setBorder(new EtchedBorder());
       
       //receive messages    
-      receiveText = new JTextArea(10,30);  
+      receiveText = new JTextArea(30,30);  
       receiveText.setBorder(new EtchedBorder());
       receiveText.setLineWrap(true);
       receiveText.setWrapStyleWord(true);
@@ -125,8 +142,9 @@ public class ServerGUI extends JFrame implements Runnable{
             public void windowClosed(ActionEvent ae)
             {
                sendOut("quit");
-               
-               sendText.setText(null);
+               for(int i = 0;i < comm.clients.size();i++){
+                  comm.clients.get(i).sendOut("END","");
+               }
                disconnect();
                System.exit(0);
             
@@ -255,12 +273,16 @@ public class ServerGUI extends JFrame implements Runnable{
    @param msg String to be sent from the server
    */
    public void sendOut(String msg){
+      String tempName;
+      String regex = "\\s*\\bBROADCAST\\b\\s*";
+      tempName = name.replaceAll(regex,"");
+   
       if(!users.isSelectionEmpty()){   
          if(users.getSelectedValue().equals(name)){
             sendAll(msg);
          }
          else{
-            comm.getClientName(users.getSelectedValue()).sendOut(name + ":",msg);
+            comm.getClientName(users.getSelectedValue()).sendOut(tempName + ":",msg);
          }
       }
    }
@@ -281,6 +303,60 @@ public class ServerGUI extends JFrame implements Runnable{
       catch(IOException ioe){
          ioe.printStackTrace();
       }  
+   }
+   
+   public void addCountDown(Long timer){
+      time = new JPanel(new GridLayout(1,0));
+      
+      JLabel currTime = new JLabel("Current time:  ",JLabel.RIGHT);
+      JLabel timeLeft = new JLabel("Time left:  ",JLabel.RIGHT);
+      JLabel yourIP = new JLabel("Your IP:",JLabel.RIGHT);
+      
+      currTime.setFont(subFont);
+      currTime.setForeground(fontColor); 
+      
+      timeLeft.setFont(subFont);
+      timeLeft.setForeground(fontColor); 
+      
+      yourIP.setFont(subFont);
+      yourIP.setForeground(fontColor);
+      
+      IP.setFont(headerFont);
+      IP.setForeground(fontColor); 
+      
+      infinity.setFont(headerFont);
+      infinity.setForeground(fontColor);
+       
+      time.add(yourIP);
+      time.add(IP);
+      time.add(currTime);
+      
+      Clock clock = new Clock();
+      Thread th = new Thread(clock);
+      th.start();
+      
+      time.add(clock);
+      
+      time.add(timeLeft);
+         
+      if(timer != 0){
+         Calendar cal = Calendar.getInstance();
+         System.out.println("" + timer);
+         System.out.println("" + cal.getTimeInMillis());
+                     
+                     
+         remainingTime = new CountDown((timer - cal.getTimeInMillis()));
+                     
+         Thread th2 = new Thread(remainingTime);
+                     
+         th2.start();
+         time.add(remainingTime);
+      }
+      else{               
+         time.add(infinity);
+      }
+      jpMain.add(time,BorderLayout.NORTH); 
+      pack();        
    }
    
    /**
@@ -306,8 +382,6 @@ public class ServerGUI extends JFrame implements Runnable{
          System.out.println("Unable to connect to host.");
       }
       
-      
-         
       try
       {
          out.writeObject(pass);
@@ -324,5 +398,83 @@ public class ServerGUI extends JFrame implements Runnable{
          cnf.printStackTrace();
       }
    }
-
+   
+   class Clock extends JLabel implements Runnable
+   {
+      private static final long serialVersionUID = 42L;
+      public void run()
+      {
+         setFont(headerFont);
+         setForeground(fontColor);         
+         new javax.swing.Timer(1000,
+               new ActionListener(){
+                  public void actionPerformed(ActionEvent ae)
+                  {
+                     setText(new SimpleDateFormat("hh:mm:ss a").format(new Date()));
+                  
+                  }
+               }).start();
+                      
+      }
+   }
+      
+   class CountDown extends JLabel implements Runnable{
+         
+      private static final long serialVersionUID = 42L;
+      private long timeLeft;
+      private javax.swing.Timer timer;
+         
+      public CountDown(long _timeLeft){
+         timeLeft = _timeLeft / 1000;
+      }
+      public void run(){
+         setFont(headerFont);
+         setForeground(fontColor);         
+         timer = new javax.swing.Timer(1000,
+               new ActionListener(){
+                  public void actionPerformed(ActionEvent ae){
+                     timeLeft--;
+                     int seconds = (int)timeLeft % 60;
+                     int hours = (int)timeLeft / 3600;
+                     int minutes = (int)(timeLeft - (hours * 3600)) / 60;
+                     String sSeconds = "" + seconds;
+                     String sHours = "" + hours;
+                     String sMinutes = "" + minutes;
+                     
+                     if(seconds < 10){
+                        sSeconds = "0" + seconds;
+                     }
+                     if(hours < 10){
+                        sHours = "0" + hours;
+                     }
+                     if(minutes < 10){
+                        sMinutes = "0" + minutes;
+                     }
+                     
+                     setText(sHours + ":" + sMinutes + ":" + sSeconds);
+                     //setText(new SimpleDateFormat("hh:mm:ss a").format(timeLeft));
+                     if(timeLeft <= 0){
+                        try{
+                           in.close();
+                           out.close();
+                           s.close();
+                        }
+                        catch(IOException ioe){
+                           ioe.printStackTrace();
+                        }
+                        
+                        JOptionPane.showMessageDialog(null,"Exam has ended: Ran out of Time.");
+                        end();
+                     }
+                  }
+               });
+         timer.start();
+      }
+      public void end(){
+         timer.stop();
+      }
+   
+   
+   
+   }
 }
