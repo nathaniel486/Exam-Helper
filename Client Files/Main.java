@@ -129,6 +129,10 @@ public class Main extends JFrame{
       private Clock clock;
       private CountDown remainingTime;
       private JLabel infinity = new JLabel("\u221E");
+      private boolean ended = false;
+      private Font headerFont = new Font(null,Font.BOLD + Font.ITALIC,24);
+      private Font subFont = new Font(null,Font.BOLD + Font.ITALIC,18);
+      private Color fontColor = new Color(0,0,255);
       
       private FileSubmitter fileSubmitPanel;
       
@@ -155,17 +159,12 @@ public class Main extends JFrame{
             
             receiveText = new JTextArea(10,30);
             chatPanel = new ChatClient(out,fullName,receiveText);
-            
             fileSubmitPanel = new FileSubmitter(out);
-            
             main.setVisible(false);
-            
             (new Reading()).start();
             
             clock = new Clock();
-            
             Thread th = new Thread(clock);
-            
             th.start();
             
             
@@ -211,14 +210,7 @@ public class Main extends JFrame{
          jpMain.add(fileSubmitPanel, BorderLayout.WEST); 
          
          //Clock for time
-         time = new JPanel(new FlowLayout());
-         
-         time.add(new JLabel("Current time:    "));
-         time.add(clock);
-         time.add(new JLabel("Time left:    "));
-         
-         time.add(infinity);
-         jpMain.add(time,BorderLayout.NORTH);
+      
              
                   
          setVisible(true);
@@ -231,17 +223,25 @@ public class Main extends JFrame{
             new WindowAdapter() {
                public void windowClosing(WindowEvent we){
                   System.out.println("Closing the Client...");
-                  try {
-                     out.writeObject("quit");
-                     out.flush();
-                     in.close();
-                     out.close();
-                     s.close();
+                  if(!ended){
+                     try {
+                        out.writeObject("quit");
+                        out.flush();
+                        in.close();
+                        out.close();
+                        s.close();
+                     } 
+                     catch(IOException e)  {
+                        System.out.println("Error closing the client. IO Exception " + e.getMessage());
+                     }
+                     finally{
+                        System.exit(0);
+                     }	
+                  }
+                  else{
                      System.exit(0);
-                  } 
-                  catch(IOException e)  {
-                     System.out.println("Error closing the client. IO Exception " + e.getMessage());
-                  }	
+                  }
+               
                }	
             });
       }
@@ -262,8 +262,14 @@ public class Main extends JFrame{
                
                   if(obj instanceof String) {
                    //If object is of type String, it is a chat message and should handled by the ChatClient
-                     String msg = (String)in.readObject();
+                     
                      String inName = (String)obj;
+                     if(inName.equalsIgnoreCase("END")){
+                        receiveText.append("Operator has ended the exam");
+                        JOptionPane.showMessageDialog(null,"Operator has ended the exam");
+                        break;
+                     }
+                     String msg = (String)in.readObject();
                      receiveText.append(inName + "\n");
                      receiveText.append(msg + "\n");
                      receiveText.setCaretPosition(receiveText.getDocument().getLength());
@@ -275,21 +281,49 @@ public class Main extends JFrame{
                      fileSubmitPanel.readLog(logText);
                   }
                   else if(obj instanceof Long){
-                     Calendar cal = Calendar.getInstance();
                      Long timer = (Long)obj;
-                     System.out.println("" + timer);
-                     System.out.println("" + cal.getTimeInMillis());
+                     time = new JPanel(new GridLayout(1,0));
+                  
+                     JLabel currTime = new JLabel("Current time:  ",JLabel.RIGHT);
+                     JLabel timeLeft = new JLabel("Time left:  ",JLabel.RIGHT);
+                     
+                     currTime.setFont(subFont);
+                     currTime.setForeground(fontColor); 
+                  
+                     timeLeft.setFont(subFont);
+                     timeLeft.setForeground(fontColor); 
+                  
+                     infinity.setFont(headerFont);
+                     infinity.setForeground(fontColor);
+                  
+                     time.add(currTime);
+                  
+                     Clock clock = new Clock();
+                     Thread th = new Thread(clock);
+                     th.start();
+                  
+                     time.add(clock);
+                  
+                     time.add(timeLeft);
+                  
+                     if(timer != 0){
+                        Calendar cal = Calendar.getInstance();
+                        System.out.println("" + timer);
+                        System.out.println("" + cal.getTimeInMillis());
                      
                      
-                     remainingTime = new CountDown((timer - cal.getTimeInMillis()));
-            
-                     Thread th2 = new Thread(remainingTime);
-               
-                     th2.start();
+                        remainingTime = new CountDown((timer - cal.getTimeInMillis()));
                      
-                     time.remove(infinity);
-                     time.add(remainingTime);
-                     jpMain.repaint();
+                        Thread th2 = new Thread(remainingTime);
+                     
+                        th2.start();
+                        time.add(remainingTime);
+                     }
+                     else{               
+                        time.add(infinity);
+                     }
+                     jpMain.add(time,BorderLayout.NORTH); 
+                     pack();
                   }
                   else {
                      System.out.println("How did we get here?");
@@ -305,6 +339,19 @@ public class Main extends JFrame{
                   //break;
                }
             }
+            
+            try{
+               in.close();
+               out.close();
+               s.close();
+            }
+            catch(IOException ioe){
+               ioe.printStackTrace();
+            }
+            finally{
+               ended = true;
+            }
+            
          }
       }
       
@@ -313,10 +360,9 @@ public class Main extends JFrame{
          private static final long serialVersionUID = 42L;
          public void run()
          {
-            Font font = new Font(null,Font.BOLD + Font.ITALIC,24);
-            setFont(font);
-            setForeground(new Color(148,0,211));         
-             new javax.swing.Timer(1000,
+            setFont(headerFont);
+            setForeground(fontColor);          
+            new javax.swing.Timer(1000,
                new ActionListener(){
                   public void actionPerformed(ActionEvent ae)
                   {
@@ -332,16 +378,16 @@ public class Main extends JFrame{
          
          private static final long serialVersionUID = 42L;
          private long timeLeft;
+         private javax.swing.Timer timer;
          
          public CountDown(long _timeLeft){
             timeLeft = _timeLeft / 1000;
          }
          public void run()
          {
-            Font font = new Font(null,Font.BOLD + Font.ITALIC,24);
-            setFont(font);
-            setForeground(new Color(148,0,211));         
-             new javax.swing.Timer(1000,
+            setFont(headerFont);
+            setForeground(fontColor);          
+            timer = new javax.swing.Timer(1000,
                new ActionListener(){
                   public void actionPerformed(ActionEvent ae)
                   {
@@ -349,15 +395,47 @@ public class Main extends JFrame{
                      int seconds = (int)timeLeft % 60;
                      int hours = (int)timeLeft / 3600;
                      int minutes = (int)(timeLeft - (hours * 3600)) / 60;
-                     setText(hours + ":" + minutes + ":" + seconds);
+                     String sSeconds = "" + seconds;
+                     String sHours = "" + hours;
+                     String sMinutes = "" + minutes;
+                     
+                     if(seconds < 10){
+                        sSeconds = "0" + seconds;
+                     }
+                     if(hours < 10){
+                        sHours = "0" + hours;
+                     }
+                     if(minutes < 10){
+                        sMinutes = "0" + minutes;
+                     }
+                     
+                     setText(sHours + ":" + sMinutes + ":" + sSeconds);
                      //setText(new SimpleDateFormat("hh:mm:ss a").format(timeLeft));
                      if(timeLeft <= 0){
-                        JOptionPane.showMessageDialog(null,"Ran out of time");
+                        try{
+                           in.close();
+                           out.close();
+                           s.close();
+                        }
+                        catch(IOException ioe){
+                           ioe.printStackTrace();
+                        }
+                        finally{
+                           ended = true;
+                        }
+                        
+                        JOptionPane.showMessageDialog(null,"Exam has ended: Ran out of Time.");
+                        end();
                      }
                   }
-               }).start();
-                      
+               });
+            timer.start();
          }
+         public void end(){
+            timer.stop();
+         }
+         
+         
       }
    }//End Submission
    
