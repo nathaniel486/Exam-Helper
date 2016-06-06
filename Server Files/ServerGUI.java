@@ -42,15 +42,20 @@ public class ServerGUI extends JFrame implements Runnable{
    private ObjectOutputStream  out = null;/**stream used to send*/
    private ObjectInputStream in = null;/**stream used to recieve*/
    private static final long serialVersionUID = 42L;
-   private JLabel IP;
-   private CountDown remainingTime;
-   private JLabel infinity = new JLabel("\u221E");
-   private JPanel time;
-   private Font headerFont = new Font(null,Font.BOLD + Font.ITALIC,24);
-   private Font subFont = new Font(null,Font.BOLD + Font.ITALIC,18);
-   private Color fontColor = new Color(0,0,255);
+   
+   private JLabel IP; /**IP address for the host machine to be displayed*/
+   private CountDown remainingTime;/**Count down timer for how much time is left in the exam*/
+   private JLabel infinity = new JLabel("\u221E");/**Infinity symbol*/
+   private JPanel time;/**Panel to hold the IP address and time labels*/
+   private Font headerFont = new Font(null,Font.BOLD + Font.ITALIC,24);/**Font for the main labels*/
+   private Font subFont = new Font(null,Font.BOLD + Font.ITALIC,18);/**Font for the sub labels*/
+   private Color fontColor = new Color(0,0,255);/**Color for the labels*/
 
-  
+   /**
+   @param _comm the MainServer.Server for the communication between the professor and students
+   @param _name Name of the professor
+   @param pass the set password by the professor
+   */
    public ServerGUI(MainServer.Server _comm,String _name,String pass){
       name = _name;
       comm = _comm;
@@ -65,7 +70,32 @@ public class ServerGUI extends JFrame implements Runnable{
       catch(UnknownHostException uhe){
          uhe.printStackTrace();
       }
-      
+      //add a menu bar
+      JMenuBar jmbar = new JMenuBar();
+      JMenu jmFile = new JMenu("File");
+      JMenuItem jmiFileQuit = new JMenuItem("Quit");
+      jmFile.add(jmiFileQuit);
+      jmbar.add(jmFile);
+            
+      JMenu jmAbout = new JMenu("About");
+      JMenuItem jmiEditAbout = new JMenuItem("About");
+      jmAbout.add(jmiEditAbout);
+      jmbar.add(jmAbout);
+      setJMenuBar(jmbar);
+         
+      jmiFileQuit.addActionListener(
+         new ActionListener(){
+            public void actionPerformed(ActionEvent ae){
+               System.exit(0);
+            }
+         });
+         
+      jmiEditAbout.addActionListener(
+         new ActionListener(){
+            public void actionPerformed(ActionEvent ae){
+               JOptionPane.showMessageDialog(null,"Version: 1.0\nAuthors: Nathaniel Larrimore, Niki Genung, Brendon Strowe\nRelease: May 19, 2016\n\nThis program helps students submit their files during an exam and help facilitate communication between the professor and student(s).\nThe Professor can specify their name, a directory they wish to save all the submitted files to, the time they wish the exam to end, and a password.");
+            }
+         });
       
       //list of connected users      
       users = new JList<String>();
@@ -286,6 +316,10 @@ public class ServerGUI extends JFrame implements Runnable{
          }
       }
    }
+   /**
+   Send a message to all connected clients
+   @param msg Messge to be sent
+   */
    public void sendAll(String msg){
       sending = true;
       for(int i = 0;i < comm.clients.size();i++){
@@ -293,7 +327,9 @@ public class ServerGUI extends JFrame implements Runnable{
       }
       sending = false;
    }
-   
+   /**
+   Disconnect and end the exam
+   */
    public void disconnect(){
       try{
          in.close();
