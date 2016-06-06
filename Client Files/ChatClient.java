@@ -5,28 +5,27 @@ import javax.swing.border.*;
 import java.io.*;
 import java.net.*;
 
-/**
-*This class extends JPanel and is used for the chat between the professor and student.  
-*/
-
 public class ChatClient extends JPanel
 {
-   private ObjectOutputStream out = null;/**Used for writing messages */
-   private JTextField sendText;/** the text field you type your message into*/
-   private JTextArea receiveText;/**The message history */
-   private JPanel 	textPanel;/** holds the sendText and send button objects*/
-   private JButton 	send;/**Send the message you typed */
-   private String name = null;/** the name of the person*/
-   private boolean isConnected = false;/** are you connected?*/
+   private ObjectOutputStream out = null;
+   private JTextField sendText;
+   private JTextArea receiveText;
+   private JPanel 	textPanel;
+   private JButton 	send;
+   private String name = null;
+   private boolean isConnected = false;
    private static final long serialVersionUID = 42L;
    
    
    public ChatClient(ObjectOutputStream _out,String _name,JTextArea _receiveText)
    {
-      //instanciate the reader and writer objects
+   
       out = _out;
       name = _name;
-      receiveText = _receiveText;   
+      receiveText = _receiveText;
+   
+      System.out.println("Starting the client..");
+   
       
       setLayout(new BorderLayout());
    
@@ -59,19 +58,18 @@ public class ChatClient extends JPanel
    
       add(textPanel,BorderLayout.CENTER);
       
-      //action performed for the send button            
+
+                  
       send.addActionListener(
          new ActionListener(){
             public void actionPerformed(ActionEvent ae)
             {
                try
                {
-                  String msg = sendText.getText();
-                  if(!msg.equals("")){
-                     out.writeObject(msg);
-                     out.flush();
-                     sendText.setText(null);
-                  }
+               String msg = sendText.getText();
+               out.writeObject(msg);
+               out.flush();
+               sendText.setText(null);
                }
                catch(IOException ioe)
                {
@@ -79,7 +77,6 @@ public class ChatClient extends JPanel
                }
             }
          });
-      //key listener to send message if the key is hit   
       sendText.addKeyListener(
          new KeyAdapter(){
             public void keyPressed(KeyEvent ke)
